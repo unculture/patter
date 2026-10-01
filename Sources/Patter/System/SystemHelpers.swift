@@ -25,11 +25,11 @@ enum Microphone {
     }
 }
 
-/// Wisp needs Accessibility access to find the focused text field and to press Command-V.
+/// Patter needs Accessibility access to find the focused text field and to press Command-V.
 enum Accessibility {
     static var isTrusted: Bool { AXIsProcessTrusted() }
 
-    /// Adds Wisp to the list in Privacy & Security > Accessibility, and shows the system dialog
+    /// Adds Patter to the list in Privacy & Security > Accessibility, and shows the system dialog
     /// that asks the user to turn it on.
     static func requestAccess() {
         _ = AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)

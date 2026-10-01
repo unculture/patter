@@ -14,7 +14,7 @@ final class TranscriptStore: ObservableObject {
 
     nonisolated static var defaultFileURL: URL {
         FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-            .appendingPathComponent("Wisp", isDirectory: true)
+            .appendingPathComponent("Patter", isDirectory: true)
             .appendingPathComponent("transcripts.json")
     }
 
@@ -60,7 +60,7 @@ final class TranscriptStore: ObservableObject {
             let backup = fileURL.deletingLastPathComponent()
                 .appendingPathComponent("transcripts.unreadable-\(stamp).json")
             try? FileManager.default.copyItem(at: fileURL, to: backup)
-            NSLog("Wisp: could not read transcripts (\(error)). Saved a copy at \(backup.path).")
+            NSLog("Patter: could not read transcripts (\(error)). Saved a copy at \(backup.path).")
         }
     }
 
@@ -73,7 +73,7 @@ final class TranscriptStore: ObservableObject {
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             try encoder.encode(transcripts).write(to: fileURL, options: .atomic)
         } catch {
-            NSLog("Wisp: could not save transcripts: \(error)")
+            NSLog("Patter: could not save transcripts: \(error)")
         }
     }
 }

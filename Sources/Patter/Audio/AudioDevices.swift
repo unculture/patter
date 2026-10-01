@@ -75,7 +75,7 @@ enum AudioDevices {
     }
 }
 
-/// Which microphone Wisp records from. Stored as a string in the preferences.
+/// Which microphone Patter records from. Stored as a string in the preferences.
 enum MicrophoneChoice: Hashable {
     /// The built-in microphone when the system default is Bluetooth, else the system default.
     case automatic

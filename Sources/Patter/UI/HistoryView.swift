@@ -45,7 +45,7 @@ struct HistoryView: View {
             HStack(alignment: .center, spacing: 12) {
                 AppMark(size: 38)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Wisp")
+                    Text("Patter")
                         .font(.system(size: 22, weight: .bold, design: .rounded))
                     Text("Your dictations, newest first")
                         .font(.system(size: 12.5))
@@ -447,7 +447,7 @@ struct EmptyHistoryView: View {
             VStack(spacing: 8) {
                 Text("No transcripts yet")
                     .font(.system(size: 18, weight: .semibold, design: .rounded))
-                Text("Press the shortcut in any app and start talking. Press it again to stop. Wisp pastes the text at the cursor, or copies it to the clipboard, and saves it here.")
+                Text("Press the shortcut in any app and start talking. Press it again to stop. Patter pastes the text at the cursor, or copies it to the clipboard, and saves it here.")
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -455,7 +455,7 @@ struct EmptyHistoryView: View {
             }
             ShortcutKeys(size: 15)
             if case .downloading = engine.state {
-                Text("Wisp is downloading its speech model (\(engine.kind.downloadSize)). This happens one time only.")
+                Text("Patter is downloading its speech model (\(engine.kind.downloadSize)). This happens one time only.")
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -515,7 +515,7 @@ extension SpeechEngine {
     }
 }
 
-/// The Wisp mark: gradient bars on a dark rounded square, like the app icon.
+/// The Patter mark: gradient bars on a dark rounded square, like the app icon.
 struct AppMark: View {
     var size: CGFloat = 38
 

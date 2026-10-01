@@ -56,13 +56,13 @@ enum DevTools {
         }
         print("""
         Usage:
-          Wisp --unregister-login-item
-          Wisp --transcribe <audio file> [--engine english|multilingual]
-          Wisp --snapshot <folder>
-          Wisp --cleanup-test [--model <OpenRouter model ID>] [--glossary <names and terms>]
+          Patter --unregister-login-item
+          Patter --transcribe <audio file> [--engine english|multilingual]
+          Patter --snapshot <folder>
+          Patter --cleanup-test [--model <OpenRouter model ID>] [--glossary <names and terms>]
                               (the key comes from OPENROUTER_API_KEY or the keychain)
-          Wisp --mic-test list|auto|system|<device UID>
-          Wisp --paste-test
+          Patter --mic-test list|auto|system|<device UID>
+          Patter --paste-test
         """)
         exit(2)
     }
@@ -131,10 +131,10 @@ enum DevTools {
         }
 
         let store = TranscriptStore(fileURL: FileManager.default.temporaryDirectory
-            .appendingPathComponent("wisp-snapshot-\(UUID().uuidString).json"))
+            .appendingPathComponent("patter-snapshot-\(UUID().uuidString).json"))
         for sample in sampleTranscripts(now: now) { store.add(sample) }
         let emptyStore = TranscriptStore(fileURL: FileManager.default.temporaryDirectory
-            .appendingPathComponent("wisp-snapshot-empty-\(UUID().uuidString).json"))
+            .appendingPathComponent("patter-snapshot-empty-\(UUID().uuidString).json"))
         let engine = SpeechEngine()
 
         for (name, appearance) in [("light", NSAppearance.Name.aqua), ("dark", .darkAqua)] {
@@ -214,7 +214,7 @@ enum DevTools {
     @MainActor
     private static func cleanupTest(models: [String], glossary: String?) async {
         guard let key = ProcessInfo.processInfo.environment["OPENROUTER_API_KEY"] ?? APIKeyStore.shared.key else {
-            print("No key. Save one in Wisp Settings > AI Cleanup, or set OPENROUTER_API_KEY.")
+            print("No key. Save one in Patter Settings > AI Cleanup, or set OPENROUTER_API_KEY.")
             exit(1)
         }
         let context = TextCleaner.Context(appName: nil, glossary: glossary ?? Preferences.shared.glossary)
@@ -244,14 +244,14 @@ enum DevTools {
 
     /// Checks the parts of auto-paste that work without a paste: the access, the V key of the
     /// keyboard layout, the clipboard copy, and the focus check in each open app. Run it through
-    /// `open -n Wisp.app --args`, so that macOS uses Wisp's Accessibility access.
+    /// `open -n Patter.app --args`, so that macOS uses Patter's Accessibility access.
     @MainActor
     private static func pasteTest() {
         print("Accessibility access: \(Accessibility.isTrusted ? "on" : "off")")
         print("Key for Command-V: \(Keyboard.keyCode(for: "v").map(String.init) ?? "not found, uses the ANSI V key")")
 
         // A private pasteboard, so that the test does not change the user's clipboard.
-        let pasteboard = NSPasteboard(name: NSPasteboard.Name("com.unculture.Wisp.paste-test"))
+        let pasteboard = NSPasteboard(name: NSPasteboard.Name("com.unculture.Patter.paste-test"))
         let first = NSPasteboardItem()
         first.setString("plain", forType: .string)
         first.setString("<b>rich</b>", forType: .html)
@@ -287,7 +287,7 @@ enum DevTools {
     // MARK: - Microphone test
 
     /// Records for two seconds and prints how long the microphone took to deliver audio.
-    /// Run it through `open -n Wisp.app --args`, so that macOS uses Wisp's microphone permission.
+    /// Run it through `open -n Patter.app --args`, so that macOS uses Patter's microphone permission.
     private static let testRecorder = AudioRecorder()
 
     @MainActor

@@ -18,7 +18,7 @@ final class DictationController: ObservableObject {
         case pasted
         /// Auto-paste is on, but the cursor was not in a text field: the transcript is on the clipboard.
         case noTextField
-        /// Auto-paste is on, but Wisp has no Accessibility access: the transcript is on the clipboard.
+        /// Auto-paste is on, but Patter has no Accessibility access: the transcript is on the clipboard.
         case needsAccess
     }
 
@@ -41,7 +41,7 @@ final class DictationController: ObservableObject {
     private let store: TranscriptStore
     private let preferences: Preferences
     private let apiKeys: APIKeyStore
-    private let log = Logger(subsystem: "com.unculture.Wisp", category: "dictation")
+    private let log = Logger(subsystem: "com.unculture.Patter", category: "dictation")
 
     private var lastToggle = Date.distantPast
     private var dismissTask: Task<Void, Never>?

@@ -30,15 +30,15 @@ enum OpenRouterError: LocalizedError {
         switch self {
         case .http(let status, let message): "OpenRouter error \(status): \(message)"
         case .emptyResponse: "The model returned no text"
-        case .invalidResponse: "OpenRouter sent a response that Wisp cannot read"
+        case .invalidResponse: "OpenRouter sent a response that Patter cannot read"
         }
     }
 }
 
 struct OpenRouterClient {
-    /// WISP_OPENROUTER_URL replaces the server, for tests against a local mock.
+    /// PATTER_OPENROUTER_URL replaces the server, for tests against a local mock.
     static let baseURL = URL(
-        string: ProcessInfo.processInfo.environment["WISP_OPENROUTER_URL"] ?? "https://openrouter.ai/api/v1")!
+        string: ProcessInfo.processInfo.environment["PATTER_OPENROUTER_URL"] ?? "https://openrouter.ai/api/v1")!
 
     let apiKey: String
     var session: URLSession = .shared
@@ -108,7 +108,7 @@ struct OpenRouterClient {
     private func authorize(_ request: inout URLRequest) {
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Wisp", forHTTPHeaderField: "X-OpenRouter-Title")
+        request.setValue("Patter", forHTTPHeaderField: "X-OpenRouter-Title")
     }
 
     private static func check(_ response: URLResponse, _ data: Data) throws {
@@ -125,7 +125,7 @@ struct OpenRouterClient {
 }
 
 /// Reads from the public model list which reasoning setting each model accepts, so that
-/// Wisp asks for the least reasoning: the cleanup needs speed, not deep thought.
+/// Patter asks for the least reasoning: the cleanup needs speed, not deep thought.
 actor ReasoningCatalog {
     static let shared = ReasoningCatalog()
 

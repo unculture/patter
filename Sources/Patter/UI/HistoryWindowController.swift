@@ -1,8 +1,8 @@
 import AppKit
 import SwiftUI
 
-/// Shows a SwiftUI view in a standard window. While any Wisp window is open, Wisp shows in the
-/// Dock and the app switcher. When the last one closes, Wisp goes back to the menu bar only.
+/// Shows a SwiftUI view in a standard window. While any Patter window is open, Patter shows in the
+/// Dock and the app switcher. When the last one closes, Patter goes back to the menu bar only.
 @MainActor
 class AppWindowController: NSObject, NSWindowDelegate {
     private var window: NSWindow?
@@ -46,7 +46,7 @@ class AppWindowController: NSObject, NSWindowDelegate {
         window.contentView = NSHostingView(rootView: makeContent())
         window.delegate = self
         window.center()
-        window.setFrameAutosaveName("Wisp\(title.replacingOccurrences(of: " ", with: ""))Window")
+        window.setFrameAutosaveName("Patter\(title.replacingOccurrences(of: " ", with: ""))Window")
         return window
     }
 }
@@ -54,7 +54,7 @@ class AppWindowController: NSObject, NSWindowDelegate {
 @MainActor
 final class HistoryWindowController: AppWindowController {
     init(store: TranscriptStore, engine: SpeechEngine, preferences: Preferences, openSettings: @escaping () -> Void) {
-        super.init(title: "Wisp", size: NSSize(width: 760, height: 640), resizable: true) {
+        super.init(title: "Patter", size: NSSize(width: 760, height: 640), resizable: true) {
             AnyView(HistoryView(
                 store: store, engine: engine, preferences: preferences, openSettings: openSettings)
                 .frame(minWidth: 560, minHeight: 440))
@@ -65,7 +65,7 @@ final class HistoryWindowController: AppWindowController {
 @MainActor
 final class SettingsWindowController: AppWindowController {
     init(preferences: Preferences, engine: SpeechEngine, store: TranscriptStore, apiKeys: APIKeyStore) {
-        super.init(title: "Wisp Settings", size: NSSize(width: 520, height: 660), resizable: false) {
+        super.init(title: "Patter Settings", size: NSSize(width: 520, height: 660), resizable: false) {
             AnyView(SettingsView(preferences: preferences, engine: engine, store: store, apiKeys: apiKeys))
         }
     }

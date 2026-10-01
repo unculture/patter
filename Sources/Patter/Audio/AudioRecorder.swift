@@ -74,8 +74,8 @@ final class AudioRecorder {
     /// Called on the main queue if the microphone does not start, or stops because of a device problem.
     var onFailure: ((Error) -> Void)?
 
-    private let log = Logger(subsystem: "com.unculture.Wisp", category: "audio")
-    private let queue = DispatchQueue(label: "com.unculture.Wisp.audio", qos: .userInteractive)
+    private let log = Logger(subsystem: "com.unculture.Patter", category: "audio")
+    private let queue = DispatchQueue(label: "com.unculture.Patter.audio", qos: .userInteractive)
     private let buffer = SampleBuffer()
     private let targetFormat = AVAudioFormat(
         commonFormat: .pcmFormatFloat32, sampleRate: sampleRate, channels: 1, interleaved: false)!

@@ -1,7 +1,7 @@
 import Foundation
 import Security
 
-/// Keeps the OpenRouter API key in the login keychain, and a copy in memory while Wisp runs.
+/// Keeps the OpenRouter API key in the login keychain, and a copy in memory while Patter runs.
 ///
 /// For an app without an Apple team ID, the keychain ties each item to the exact build: after a
 /// rebuild, the first read asks the user one time. A rebuilt app also cannot delete an item that
@@ -13,10 +13,8 @@ final class APIKeyStore: ObservableObject {
 
     @Published private(set) var key: String?
 
-    private let service = "com.unculture.Wisp"
+    private let service = "com.unculture.Patter"
     private let account = "OpenRouter"
-    /// The item name that builds of Wisp used before 1 October 2026. Wisp copies a key from it one time.
-    private let legacyAccount = "OpenRouter API key"
 
     /// The snapshot command sets this to false. The keychain asks the user before it gives the key
     /// to a binary other than the installed app.
@@ -24,17 +22,18 @@ final class APIKeyStore: ObservableObject {
 
     private init() {
         guard Self.readsKeychain else { return }
-        let copiedFlag = "copiedLegacyKeychainItem"
+        let copiedFlag = "copiedWispKeychainItem"
         if let current = Self.read(service: service, account: account) {
             key = current
         } else if !UserDefaults.standard.bool(forKey: copiedFlag),
-                  let legacy = Self.read(service: service, account: legacyAccount) {
-            key = legacy
-            if Self.add(legacy, service: service, account: account) != errSecSuccess {
-                NSLog("Wisp: could not copy the API key to a new keychain item")
+                  let old = Self.read(service: WispMigration.bundleIdentifier, account: account) {
+            // Patter was called Wisp: copy the key from the item of Wisp.
+            key = old
+            if Self.add(old, service: service, account: account) != errSecSuccess {
+                NSLog("Patter: could not copy the API key to a new keychain item")
             }
         }
-        // Look at the old item only one time: after a rebuild, each read of it asks the user.
+        // Look at the item of Wisp only one time: each read of it asks the user.
         UserDefaults.standard.set(true, forKey: copiedFlag)
     }
 
@@ -59,7 +58,7 @@ final class APIKeyStore: ObservableObject {
             status = SecItemUpdate(query as CFDictionary, changes as CFDictionary)
         }
         guard status == errSecSuccess else {
-            NSLog("Wisp: could not save the API key in the keychain (\(status))")
+            NSLog("Patter: could not save the API key in the keychain (\(status))")
             return false
         }
         key = trimmed
@@ -68,7 +67,6 @@ final class APIKeyStore: ObservableObject {
 
     func delete() {
         Self.remove(service: service, account: account)
-        Self.remove(service: service, account: legacyAccount)
         key = nil
     }
 
@@ -82,7 +80,7 @@ final class APIKeyStore: ObservableObject {
 
     private static func add(_ value: String, service: String, account: String) -> OSStatus {
         var attributes = query(service: service, account: account)
-        attributes[kSecAttrLabel as String] = "Wisp OpenRouter key"
+        attributes[kSecAttrLabel as String] = "Patter OpenRouter key"
         attributes[kSecValueData as String] = Data(value.utf8)
         return SecItemAdd(attributes as CFDictionary, nil)
     }

@@ -61,7 +61,7 @@ private struct GeneralSettings: View {
     var body: some View {
         Form {
             Section {
-                Toggle("Open Wisp at login", isOn: Binding(
+                Toggle("Open Patter at login", isOn: Binding(
                     get: { preferences.launchAtLogin },
                     set: { preferences.launchAtLogin = $0 }))
                 Toggle("Play a sound when the microphone is ready, and when you stop", isOn: $preferences.playSounds)
@@ -76,7 +76,7 @@ private struct GeneralSettings: View {
                     } else {
                         HStack {
                             Label {
-                                Text("Wisp needs Accessibility access to paste")
+                                Text("Patter needs Accessibility access to paste")
                             } icon: {
                                 Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
                             }
@@ -86,7 +86,7 @@ private struct GeneralSettings: View {
                     }
                 }
             } footer: {
-                Text("Wisp pastes the transcript, then puts your clipboard back after half a second. If the cursor is not in a text field, Wisp copies the transcript to the clipboard. To paste the last transcript again, press \(Shortcut.pasteLastDisplay).")
+                Text("Patter pastes the transcript, then puts your clipboard back after half a second. If the cursor is not in a text field, Patter copies the transcript to the clipboard. To paste the last transcript again, press \(Shortcut.pasteLastDisplay).")
                     .settingsFootnote()
             }
 
@@ -137,7 +137,7 @@ private struct GeneralSettings: View {
             reloadDevices()
             accessibilityTrusted = Accessibility.isTrusted
         }
-        // The user turns on the access in System Settings, then comes back to Wisp.
+        // The user turns on the access in System Settings, then comes back to Patter.
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             accessibilityTrusted = Accessibility.isTrusted
         }
@@ -184,7 +184,7 @@ private struct CleanupSettings: View {
                 Toggle("Clean up transcripts with AI", isOn: $preferences.cleanupEnabled)
                     .disabled(!apiKeys.hasKey)
             } footer: {
-                Text("An AI model removes filler words, applies your corrections (\"Tuesday, no, Wednesday\"), fixes misheard words and names, sets sentences and paragraphs, and turns spoken lists into bullet points. Wisp keeps the original transcript too.")
+                Text("An AI model removes filler words, applies your corrections (\"Tuesday, no, Wednesday\"), fixes misheard words and names, sets sentences and paragraphs, and turns spoken lists into bullet points. Patter keeps the original transcript too.")
                     .settingsFootnote()
             }
 
@@ -251,7 +251,7 @@ private struct CleanupSettings: View {
             Section {
                 ZStack(alignment: .topLeading) {
                     if preferences.glossary.isEmpty {
-                        Text("Northwind, OpenRouter, Wisp, Sarah Jones…")
+                        Text("Northwind, OpenRouter, Patter, Sarah Jones…")
                             .foregroundStyle(.tertiary)
                             .padding(.top, 1)
                             .padding(.leading, 5)
@@ -264,12 +264,12 @@ private struct CleanupSettings: View {
             } header: {
                 Text("Names and terms")
             } footer: {
-                Text("Wisp gives this list to the model, so that it spells your names, products and jargon correctly.")
+                Text("Patter gives this list to the model, so that it spells your names, products and jargon correctly.")
                     .settingsFootnote()
             }
 
             Section {
-                Text("Wisp sends the transcript text, this list, and the name of the app you dictate into to OpenRouter. Your audio stays on this Mac. If the cleanup fails or takes longer than 8 seconds, Wisp copies the transcript without cleanup.")
+                Text("Patter sends the transcript text, this list, and the name of the app you dictate into to OpenRouter. Your audio stays on this Mac. If the cleanup fails or takes longer than 8 seconds, Patter copies the transcript without cleanup.")
                     .settingsFootnote()
             }
         }

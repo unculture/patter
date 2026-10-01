@@ -58,7 +58,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             tint = nil
         }
         let configuration = NSImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
-        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Wisp")?
+        let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Patter")?
             .withSymbolConfiguration(configuration)
         image?.isTemplate = true
         button.image = image
@@ -108,7 +108,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         }
 
         menu.addItem(.separator())
-        menu.addItem(item("Open Wisp…", action: #selector(showHistory), key: "o"))
+        menu.addItem(item("Open Patter…", action: #selector(showHistory), key: "o"))
 
         menu.addItem(.separator())
         let cleanup = item(
@@ -139,7 +139,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         }
 
         menu.addItem(.separator())
-        menu.addItem(item("Quit Wisp", action: #selector(quit), key: "q"))
+        menu.addItem(item("Quit Patter", action: #selector(quit), key: "q"))
     }
 
     private func microphoneMenu() -> NSMenu {

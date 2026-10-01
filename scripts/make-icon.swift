@@ -1,4 +1,4 @@
-// Draws the Wisp app icon and writes Resources/AppIcon.icns.
+// Draws the Patter app icon and writes Resources/AppIcon.icns.
 // Usage: swift scripts/make-icon.swift Resources/AppIcon.icns
 import AppKit
 
@@ -76,7 +76,7 @@ func drawIcon(size: CGFloat) -> NSBitmapImageRep {
     return rep
 }
 
-let iconset = FileManager.default.temporaryDirectory.appendingPathComponent("Wisp-\(UUID().uuidString).iconset")
+let iconset = FileManager.default.temporaryDirectory.appendingPathComponent("Patter-\(UUID().uuidString).iconset")
 try FileManager.default.createDirectory(at: iconset, withIntermediateDirectories: true)
 for base in [16, 32, 128, 256, 512] {
     for factor in [1, 2] {

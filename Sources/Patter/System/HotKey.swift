@@ -35,7 +35,7 @@ final class HotKey {
             1, &eventType, Unmanaged.passUnretained(self).toOpaque(), &handlerRef)
         guard installStatus == noErr else { return nil }
 
-        let hotKeyID = EventHotKeyID(signature: OSType(0x5749_5350), id: id)  // "WISP"
+        let hotKeyID = EventHotKeyID(signature: OSType(0x5041_5452), id: id)  // "PATR"
         let registerStatus = RegisterEventHotKey(
             UInt32(keyCode), UInt32(modifiers), hotKeyID, GetApplicationEventTarget(), 0, &hotKeyRef)
         guard registerStatus == noErr else { return nil }

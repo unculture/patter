@@ -6,12 +6,14 @@ if arguments.dropFirst().contains(where: DevTools.flags.contains) {
     DevTools.run(arguments)
 }
 
-// Only one copy of Wisp runs at a time: a second copy would fight over the shortcut and the menu bar.
-let otherCopies = NSRunningApplication.runningApplications(withBundleIdentifier: "com.unculture.Wisp")
+// Only one copy of Patter runs at a time: a second copy would fight over the shortcut and the menu bar.
+let otherCopies = NSRunningApplication.runningApplications(withBundleIdentifier: "com.unculture.Patter")
     .filter { $0.processIdentifier != ProcessInfo.processInfo.processIdentifier }
 if !otherCopies.isEmpty {
     exit(0)
 }
+
+WispMigration.run()
 
 MainActor.assumeIsolated {
     let app = NSApplication.shared

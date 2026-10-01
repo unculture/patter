@@ -43,7 +43,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if hotKey == nil { warnShortcutUnavailable() }
 
-        NSLog("Wisp: Accessibility access is \(Accessibility.isTrusted ? "on" : "off")")
+        NSLog("Patter: Accessibility access is \(Accessibility.isTrusted ? "on" : "off")")
         updatePasteShortcut(enabled: preferences.autoPaste)
         if preferences.autoPaste && !preferences.askedForAccessibility { askForAccessibility() }
         preferences.$autoPaste
@@ -65,7 +65,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Opening Wisp again from Finder or Spotlight while it runs shows the transcripts window.
+    /// Opening Patter again from Finder or Spotlight while it runs shows the transcripts window.
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         history.show()
         return true
@@ -75,14 +75,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settings.show()
     }
 
-    /// ⌃⌘V pastes the last transcript. Wisp holds this shortcut only while auto-paste is on.
+    /// ⌃⌘V pastes the last transcript. Patter holds this shortcut only while auto-paste is on.
     private func updatePasteShortcut(enabled: Bool) {
         pasteHotKey = nil
         guard enabled else { return }
         pasteHotKey = HotKey(keyCode: Shortcut.pasteLastKeyCode, modifiers: controlKey | cmdKey) { [weak self] in
             MainActor.assumeIsolated { self?.dictation.pasteLastTranscript() }
         }
-        if pasteHotKey == nil { NSLog("Wisp: another app uses \(Shortcut.pasteLastDisplay)") }
+        if pasteHotKey == nil { NSLog("Patter: another app uses \(Shortcut.pasteLastDisplay)") }
     }
 
     private func askForAccessibility() {
@@ -94,7 +94,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func warnShortcutUnavailable() {
         let alert = NSAlert()
         alert.messageText = "The shortcut \(Shortcut.display) is not available"
-        alert.informativeText = "Another app uses Control-Shift-R. Quit that app and open Wisp again, or start dictation from the Wisp menu bar icon."
+        alert.informativeText = "Another app uses Control-Shift-R. Quit that app and open Patter again, or start dictation from the Patter menu bar icon."
         alert.alertStyle = .warning
         alert.runModal()
     }
@@ -106,14 +106,14 @@ enum MainMenu {
         let main = NSMenu()
 
         let appMenu = NSMenu()
-        appMenu.addItem(withTitle: "About Wisp", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
+        appMenu.addItem(withTitle: "About Patter", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: "")
         appMenu.addItem(.separator())
         appMenu.addItem(withTitle: "Settings…", action: #selector(AppDelegate.showSettings(_:)), keyEquivalent: ",")
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Hide Wisp", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
+        appMenu.addItem(withTitle: "Hide Patter", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h")
         appMenu.addItem(.separator())
-        appMenu.addItem(withTitle: "Quit Wisp", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-        main.addItem(submenu: appMenu, title: "Wisp")
+        appMenu.addItem(withTitle: "Quit Patter", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        main.addItem(submenu: appMenu, title: "Patter")
 
         let editMenu = NSMenu(title: "Edit")
         editMenu.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")

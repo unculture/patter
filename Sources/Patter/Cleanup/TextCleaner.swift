@@ -7,7 +7,7 @@ enum CleanupError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noAPIKey: "No OpenRouter API key"
-        case .suspiciousOutput: "The model changed the text too much, so Wisp kept the original"
+        case .suspiciousOutput: "The model changed the text too much, so Patter kept the original"
         }
     }
 }

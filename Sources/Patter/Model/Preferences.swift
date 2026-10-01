@@ -71,7 +71,7 @@ final class Preferences: ObservableObject {
         didSet { defaults.set(autoPaste, forKey: Key.autoPaste) }
     }
 
-    /// Whether Wisp showed the system dialog that asks for Accessibility access.
+    /// Whether Patter showed the system dialog that asks for Accessibility access.
     var askedForAccessibility: Bool {
         get { defaults.bool(forKey: Key.askedForAccessibility) }
         set { defaults.set(newValue, forKey: Key.askedForAccessibility) }
@@ -94,7 +94,7 @@ final class Preferences: ObservableObject {
                     try SMAppService.mainApp.unregister()
                 }
             } catch {
-                NSLog("Wisp: could not change the login item: \(error)")
+                NSLog("Patter: could not change the login item: \(error)")
             }
         }
     }

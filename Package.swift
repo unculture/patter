@@ -2,17 +2,17 @@
 import PackageDescription
 
 let package = Package(
-    name: "Wisp",
+    name: "Patter",
     platforms: [.macOS(.v14)],
     dependencies: [
-        // traits: [] drops the text-normalization engine, which Wisp does not use.
+        // traits: [] drops the text-normalization engine, which Patter does not use.
         .package(url: "https://github.com/FluidInference/FluidAudio.git", exact: "0.17.4", traits: []),
     ],
     targets: [
         .executableTarget(
-            name: "Wisp",
+            name: "Patter",
             dependencies: [.product(name: "FluidAudio", package: "FluidAudio")],
-            path: "Sources/Wisp",
+            path: "Sources/Patter",
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
     ]
