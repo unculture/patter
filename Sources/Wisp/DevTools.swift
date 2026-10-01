@@ -202,8 +202,10 @@ enum DevTools {
     static let cleanupSamples: [(label: String, text: String)] = [
         ("self-correction", "Um, so I was thinking we could meet on Tuesday, no wait, Wednesday at, uh, three PM to go over the the launch plan."),
         ("list", "Okay, so for the release we need three things. First, update the change log. Second, uh, bump the version number. And third, send the announcement to the team on slack."),
-        ("names", "Can you ask super tab's finance team whether the open router invoice was paid? I think it was sent to the wrong address, sorry, the wrong email."),
+        ("names", "Can you ask north wind's finance team whether the open router invoice was paid? I think it was sent to the wrong address, sorry, the wrong email."),
         ("misheard", "We should probably put this in the get hub repo and open a poll request so that Kate can review the cold changes before Friday."),
+        ("opener", "Okay, how does this work? I clicked the, um, the export button and nothing happened."),
+        ("greeting", "Hey Sam, thanks for the notes. Uh, I'll, I'll look at them tomorrow."),
         ("bullets", "Bullet points. Buy milk, call the dentist, renew the passport, book the flights to Lisbon."),
         ("request", "Write an email to Sam saying that the meeting is moved to Friday."),
         ("question", "What do you think about moving the offsite to May? Let me know by Monday."),

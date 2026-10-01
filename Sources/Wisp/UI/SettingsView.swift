@@ -251,7 +251,7 @@ private struct CleanupSettings: View {
             Section {
                 ZStack(alignment: .topLeading) {
                     if preferences.glossary.isEmpty {
-                        Text("Supertab, OpenRouter, Wisp, Sarah Jones…")
+                        Text("Northwind, OpenRouter, Wisp, Sarah Jones…")
                             .foregroundStyle(.tertiary)
                             .padding(.top, 1)
                             .padding(.leading, 5)

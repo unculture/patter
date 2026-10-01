@@ -94,7 +94,7 @@ To change the model, use Settings > General > Speech model. Wisp downloads a mod
 
 The AI cleanup sends each transcript to a language model through OpenRouter. The model does these things:
 
-- It removes filler words, false starts, and repeated words.
+- It removes filler words, false starts, and repeated words. It keeps the words that open a sentence, for example "OK", "So", or "Hey".
 - It applies self-corrections. For example, "Tuesday, no, Wednesday" becomes "Wednesday".
 - It fixes misheard words, names, punctuation, and sentence boundaries.
 - It turns spoken lists into bullet points or numbered steps.
