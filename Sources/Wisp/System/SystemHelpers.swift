@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import AVFoundation
 
 enum Clipboard {
@@ -24,6 +25,22 @@ enum Microphone {
     }
 }
 
+/// Wisp needs Accessibility access to find the focused text field and to press Command-V.
+enum Accessibility {
+    static var isTrusted: Bool { AXIsProcessTrusted() }
+
+    /// Adds Wisp to the list in Privacy & Security > Accessibility, and shows the system dialog
+    /// that asks the user to turn it on.
+    static func requestAccess() {
+        _ = AXIsProcessTrustedWithOptions(["AXTrustedCheckOptionPrompt": true] as CFDictionary)
+    }
+
+    static func openPrivacySettings() {
+        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
+        NSWorkspace.shared.open(url)
+    }
+}
+
 @MainActor
 enum Sounds {
     static func playStart() { play("Tink") }
@@ -42,4 +59,8 @@ enum Shortcut {
     static let keyCode = 0x0F  // kVK_ANSI_R
     static let symbols = ["⌃", "⇧", "R"]
     static let display = symbols.joined()
+
+    /// Pastes the last transcript again: Control-Command-V, the same shortcut as in Wispr Flow.
+    static let pasteLastKeyCode = 0x09  // kVK_ANSI_V
+    static let pasteLastDisplay = "⌃⌘V"
 }

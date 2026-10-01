@@ -1,6 +1,6 @@
 # Wisp
 
-Wisp is a menu bar dictation app for macOS. You press Control-Shift-R, talk, and press it again. Wisp transcribes the speech on your Mac, copies the text to the clipboard, and saves it in a history window. An optional AI cleanup pass removes filler words, applies your self-corrections, and formats lists.
+Wisp is a menu bar dictation app for macOS. You press Control-Shift-R, talk, and press it again. Wisp transcribes the speech on your Mac, pastes the text at the cursor, and saves it in a history window. An optional AI cleanup pass removes filler words, applies your self-corrections, and formats lists.
 
 ## Requirements
 
@@ -24,15 +24,15 @@ On the first launch, Wisp does these things:
 1. It adds itself to the login items. As a result, Wisp opens at each login.
 2. It opens the transcripts window.
 3. It asks for microphone access.
-4. It downloads and prepares the English speech model.
+4. It asks for Accessibility access, so that it can paste the text.
+5. It downloads and prepares the English speech model.
 
 ## Use Wisp
 
 1. Press Control-Shift-R in any app. The indicator shows at the bottom of the screen with a yellow dot and "Starting mic".
 2. Wait for the start sound. The bars replace "Starting mic" at the same time. If the microphone hears sound, the bars move.
 3. Talk.
-4. To finish, press Control-Shift-R again or click the red stop button. Wisp copies the text to the clipboard and shows "Copied to clipboard".
-5. Paste the text where you need it.
+4. To finish, press Control-Shift-R again or click the red stop button. Wisp pastes the text at the cursor and shows "Pasted".
 
 To discard a recording, click the X button on the indicator. Recordings shorter than 0.3 seconds are discarded automatically.
 
@@ -40,12 +40,34 @@ The menu bar icon opens a menu with these items:
 
 - Start Dictation or Stop Dictation.
 - Copy Last Transcript, and the three most recent transcripts. Click one to copy it.
+- Paste Last Transcript, while auto-paste is on.
 - Open Wisp, which opens the transcripts window.
 - AI Cleanup, which turns the cleanup on or off.
+- Auto-Paste, which turns the paste on or off.
 - Microphone, which selects the microphone.
 - Settings.
 
 The transcripts window lists every transcript, newest first, grouped by day. Each entry shows the time, the length of the recording, and the word count. Hover over an entry to copy or delete it. After a delete, you can click Undo for five seconds. The search field filters the list. The gear button opens the settings.
+
+## Auto-paste
+
+Auto-paste works the same way as in Wispr Flow. When a transcript is ready, Wisp does these steps:
+
+1. It checks whether the cursor is in a text field of the app in front.
+2. It puts the text on the clipboard and presses Command-V.
+3. After half a second, it puts back the previous contents of the clipboard. In a remote desktop or virtual machine app, Wisp waits five seconds, because these apps send the clipboard to the other computer first.
+
+If the cursor is not in a text field, Wisp copies the text to the clipboard and shows "Copied. No text field to paste into". Click a text field and press Command-V.
+
+To paste the last transcript again, press Control-Command-V, or choose Paste Last Transcript in the menu bar menu. Wisp holds this shortcut only while auto-paste is on.
+
+Some apps draw their own text views and do not tell macOS where the cursor is, for example some terminals and Electron apps. In these apps, Wisp pastes without the check.
+
+Clipboard managers do not save the pasted text, because Wisp marks it as transient with the [nspasteboard.org](http://nspasteboard.org) markers. If the previous clipboard contents are a password from a password manager, Wisp does not put them back. The password manager cannot clear a copy that Wisp puts back.
+
+Wisp needs Accessibility access to find the text field and to press Command-V. Wisp reads only the type of the focused element, for example "text field". It does not read the text in the field.
+
+To turn off auto-paste, use Settings > General or Auto-Paste in the menu bar menu. Wisp then copies each transcript to the clipboard and leaves it there.
 
 ## Microphone
 
@@ -111,6 +133,10 @@ If Wisp cannot read the transcripts file, it keeps a copy named `transcripts.unr
 
 If the indicator says "Microphone access is off", click Open Settings. Then turn on Wisp in Privacy & Security > Microphone.
 
+If the indicator shows an Allow Pasting button, Wisp has no Accessibility access. Click Allow Pasting, and turn on Wisp in Privacy & Security > Accessibility. If Wisp is on in that list but still cannot paste, turn it off and on again.
+
+If the indicator says "Pasted" but no text shows up, the app did not take the paste. Choose Copy Last Transcript in the menu bar menu, click the text field, and press Command-V.
+
 After each rebuild, macOS asks one time whether Wisp can use its keychain item. The reason is that the keychain ties an item to the exact build of an app that has no Apple team ID. Click Always Allow. If you click Allow, macOS asks again at each launch.
 
 If Wisp says that the shortcut is not available, another app uses Control-Shift-R. Quit that app and open Wisp again.
@@ -140,6 +166,12 @@ To list the microphones and measure how long one takes to start, run the command
 
 ```sh
 open -n -W --stdout /dev/stdout build/Wisp.app --args --mic-test auto
+```
+
+To check the parts of auto-paste, run the command below. It prints the Accessibility access and the key that types V in your keyboard layout. It also tests the clipboard copy on a private pasteboard, and prints the focus check for each open app. The command does not paste anything.
+
+```sh
+open -n -W --stdout /dev/stdout build/Wisp.app --args --paste-test
 ```
 
 To render the indicator states, the transcripts window, and the settings to PNG files, run this command:
@@ -177,6 +209,7 @@ Both model licenses allow commercial use, with attribution.
 - `Sources/Wisp/Audio/`: microphone selection, capture, conversion to 16 kHz mono, and the level meter.
 - `Sources/Wisp/Speech/SpeechEngine.swift`: model download, loading, warm-up, and transcription.
 - `Sources/Wisp/Cleanup/`: the OpenRouter client, the cleanup prompt and output checks, and the keychain storage.
-- `Sources/Wisp/System/HotKey.swift`: the global shortcut. It uses Carbon hot keys, so it needs no Accessibility permission.
+- `Sources/Wisp/System/HotKey.swift`: the global shortcuts. They use Carbon hot keys, so they need no Accessibility permission.
+- `Sources/Wisp/System/Paster.swift`: the text field check, the paste, and the clipboard restore.
 - `Sources/Wisp/UI/`: the indicator, the transcripts window, the settings, and the menu bar item.
 - `Sources/Wisp/Model/`: transcripts, storage, and preferences.

@@ -447,7 +447,7 @@ struct EmptyHistoryView: View {
             VStack(spacing: 8) {
                 Text("No transcripts yet")
                     .font(.system(size: 18, weight: .semibold, design: .rounded))
-                Text("Press the shortcut in any app and start talking. Press it again to stop. The text goes to your clipboard and shows up here.")
+                Text("Press the shortcut in any app and start talking. Press it again to stop. Wisp pastes the text at the cursor, or copies it to the clipboard, and saves it here.")
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

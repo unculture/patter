@@ -87,6 +87,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         let copyLast = item("Copy Last Transcript", action: #selector(copyLastTranscript))
         copyLast.isEnabled = store.latest != nil
         menu.addItem(copyLast)
+        if preferences.autoPaste {
+            let pasteLast = item("Paste Last Transcript", action: #selector(pasteLastTranscript))
+            pasteLast.keyEquivalent = "v"
+            pasteLast.keyEquivalentModifierMask = [.control, .command]
+            pasteLast.isEnabled = store.latest != nil
+            menu.addItem(pasteLast)
+        }
 
         let recent = Array(store.transcripts.prefix(3))
         if !recent.isEmpty {
@@ -110,6 +117,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         cleanup.state = dictation.cleanupAvailable ? .on : .off
         cleanup.isEnabled = apiKeys.hasKey
         menu.addItem(cleanup)
+
+        let autoPaste = item(
+            preferences.autoPaste && !Accessibility.isTrusted ? "Auto-Paste (allow access in Settings)" : "Auto-Paste",
+            action: #selector(toggleAutoPaste))
+        autoPaste.state = preferences.autoPaste ? .on : .off
+        autoPaste.toolTip = "Paste each transcript into the text field that has the cursor"
+        menu.addItem(autoPaste)
 
         let microphone = NSMenuItem(title: "Microphone", action: nil, keyEquivalent: "")
         microphone.submenu = microphoneMenu()
@@ -174,6 +188,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     @objc private func retryModel() { engine.retry() }
     @objc private func showSettings() { openSettings() }
     @objc private func toggleCleanup() { preferences.cleanupEnabled.toggle() }
+    @objc private func toggleAutoPaste() { preferences.autoPaste.toggle() }
+    @objc private func pasteLastTranscript() { dictation.pasteLastTranscript() }
 
     @objc private func selectMicrophone(_ sender: NSMenuItem) {
         guard let stored = sender.representedObject as? String else { return }

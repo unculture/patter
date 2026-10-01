@@ -18,7 +18,12 @@ final class APIKeyStore: ObservableObject {
     /// The item name that builds of Wisp used before 1 October 2026. Wisp copies a key from it one time.
     private let legacyAccount = "OpenRouter API key"
 
+    /// The snapshot command sets this to false. The keychain asks the user before it gives the key
+    /// to a binary other than the installed app.
+    static var readsKeychain = true
+
     private init() {
+        guard Self.readsKeychain else { return }
         let copiedFlag = "copiedLegacyKeychainItem"
         if let current = Self.read(service: service, account: account) {
             key = current

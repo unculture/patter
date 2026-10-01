@@ -34,6 +34,8 @@ final class Preferences: ObservableObject {
         static let cleanupEnabled = "cleanupEnabled"
         static let cleanupModel = "cleanupModel"
         static let glossary = "glossary"
+        static let autoPaste = "autoPaste"
+        static let askedForAccessibility = "askedForAccessibility"
     }
 
     private let defaults = UserDefaults.standard
@@ -62,6 +64,17 @@ final class Preferences: ObservableObject {
     /// Names and terms that the AI cleanup must spell correctly, as the user typed them.
     @Published var glossary: String {
         didSet { defaults.set(glossary, forKey: Key.glossary) }
+    }
+
+    /// Paste each transcript into the focused text field of the app in front, as Wispr Flow does.
+    @Published var autoPaste: Bool {
+        didSet { defaults.set(autoPaste, forKey: Key.autoPaste) }
+    }
+
+    /// Whether Wisp showed the system dialog that asks for Accessibility access.
+    var askedForAccessibility: Bool {
+        get { defaults.bool(forKey: Key.askedForAccessibility) }
+        set { defaults.set(newValue, forKey: Key.askedForAccessibility) }
     }
 
     var hasLaunchedBefore: Bool {
@@ -93,5 +106,6 @@ final class Preferences: ObservableObject {
         cleanupEnabled = defaults.bool(forKey: Key.cleanupEnabled)
         cleanupModel = defaults.string(forKey: Key.cleanupModel) ?? CleanupModel.presets[0].id
         glossary = defaults.string(forKey: Key.glossary) ?? ""
+        autoPaste = defaults.object(forKey: Key.autoPaste) as? Bool ?? true
     }
 }

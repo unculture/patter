@@ -16,7 +16,8 @@ struct IndicatorView: View {
                     onStop: dictation.stop,
                     onSkip: dictation.skipCleanup,
                     onRetry: dictation.retryFailedRecording,
-                    onOpenSettings: dictation.openMicrophoneSettings
+                    onOpenSettings: dictation.openMicrophoneSettings,
+                    onAllowPasting: dictation.openAccessibilitySettings
                 )
                 .transition(
                     .asymmetric(
@@ -39,6 +40,7 @@ struct PillView: View {
     var onSkip: () -> Void = {}
     var onRetry: () -> Void = {}
     var onOpenSettings: () -> Void = {}
+    var onAllowPasting: () -> Void = {}
 
     var body: some View {
         content
@@ -82,7 +84,7 @@ struct PillView: View {
                 WaveformView(mode: .live, meter: meter)
                     .frame(width: 92, height: 24)
                 ElapsedTime(since: startedAt)
-                PillButton(symbol: "stop.fill", label: "Stop and copy", style: .stop, action: onStop)
+                PillButton(symbol: "stop.fill", label: "Stop", style: .stop, action: onStop)
             }
             .transition(.opacity)
 
@@ -111,17 +113,27 @@ struct PillView: View {
             }
             .padding(.leading, 12)
 
-        case .finished(let cleanupFailed):
+        case .finished(let delivery, let cleanupFailed):
             HStack(spacing: 8) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(cleanupFailed ? Theme.warning : Theme.success)
-                    .symbolEffect(.bounce, value: phase)
-                Text(cleanupFailed ? "Copied without cleanup" : "Copied to clipboard")
+                if delivery == .noTextField {
+                    Image(systemName: "doc.on.clipboard.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(cleanupFailed ? Theme.warning : .white.opacity(0.85))
+                } else {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(cleanupFailed ? Theme.warning : Theme.success)
+                        .symbolEffect(.bounce, value: phase)
+                }
+                Text(Self.message(for: delivery, cleanupFailed: cleanupFailed))
                     .font(.system(size: 12.5, weight: .medium))
                     .foregroundStyle(.white.opacity(0.9))
+                if delivery == .needsAccess {
+                    PillTextButton(title: "Allow Pasting", action: onAllowPasting)
+                }
             }
-            .padding(.horizontal, 10)
+            .padding(.leading, 10)
+            .padding(.trailing, delivery == .needsAccess ? 0 : 10)
 
         case .failed(let message, let action):
             HStack(spacing: 8) {
@@ -142,6 +154,14 @@ struct PillView: View {
             }
             .padding(.leading, 10)
             .padding(.trailing, action == .none ? 10 : 0)
+        }
+    }
+
+    private static func message(for delivery: DictationController.Delivery, cleanupFailed: Bool) -> String {
+        switch delivery {
+        case .pasted: cleanupFailed ? "Pasted without cleanup" : "Pasted"
+        case .copied, .needsAccess: cleanupFailed ? "Copied without cleanup" : "Copied to clipboard"
+        case .noTextField: "Copied. No text field to paste into"
         }
     }
 

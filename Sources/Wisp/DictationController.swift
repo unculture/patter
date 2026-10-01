@@ -1,13 +1,25 @@
 import AppKit
 import os
 
-/// The dictation cycle: record, transcribe, clean up, copy to the clipboard, save.
+/// The dictation cycle: record, transcribe, clean up, paste or copy, save.
 @MainActor
 final class DictationController: ObservableObject {
     enum FailureAction: Equatable {
         case none
         case retry
         case openMicrophoneSettings
+    }
+
+    /// Where the transcript went.
+    enum Delivery: Equatable {
+        /// Auto-paste is off: the transcript is on the clipboard.
+        case copied
+        /// Pasted into the text field in front. The clipboard has its previous contents again.
+        case pasted
+        /// Auto-paste is on, but the cursor was not in a text field: the transcript is on the clipboard.
+        case noTextField
+        /// Auto-paste is on, but Wisp has no Accessibility access: the transcript is on the clipboard.
+        case needsAccess
     }
 
     enum Phase: Equatable {
@@ -18,7 +30,7 @@ final class DictationController: ObservableObject {
         case transcribing
         /// The AI cleanup is running.
         case polishing
-        case finished(cleanupFailed: Bool)
+        case finished(Delivery, cleanupFailed: Bool)
         case failed(message: String, action: FailureAction)
     }
 
@@ -144,6 +156,21 @@ final class DictationController: ObservableObject {
         phase = .idle
     }
 
+    func openAccessibilitySettings() {
+        Accessibility.openPrivacySettings()
+        phase = .idle
+    }
+
+    /// Pastes the newest transcript again, for example after a paste into the wrong place.
+    func pasteLastTranscript() {
+        guard let latest = store.latest else { return }
+        switch phase {
+        case .starting, .recording, .transcribing, .polishing: return
+        case .idle, .finished, .failed: break
+        }
+        Task { show(.finished(await deliver(latest.text), cleanupFailed: false)) }
+    }
+
     private func beginRecording() {
         dismissTask?.cancel()
         let front = NSWorkspace.shared.frontmostApplication
@@ -191,12 +218,24 @@ final class DictationController: ObservableObject {
                 guard current == cycle else { return }
             }
 
-            Clipboard.copy(text)
             store.add(Transcript(
                 text: text, createdAt: startedAt, duration: duration,
                 rawText: text == raw ? nil : raw))
-            show(.finished(cleanupFailed: cleanupFailed))
+            show(.finished(await deliver(text), cleanupFailed: cleanupFailed))
         }
+    }
+
+    /// Pastes the text at the cursor if auto-paste is on, else copies it to the clipboard.
+    private func deliver(_ text: String) async -> Delivery {
+        guard preferences.autoPaste else {
+            Clipboard.copy(text)
+            return .copied
+        }
+        guard Accessibility.isTrusted else {
+            Clipboard.copy(text)
+            return .needsAccess
+        }
+        return await Paster.paste(text) ? .pasted : .noTextField
     }
 
     /// Returns the cleaned text, or the original text and true if the cleanup failed.
@@ -246,7 +285,9 @@ final class DictationController: ObservableObject {
         let seconds: Double
         switch result {
         case .failed(_, let action): seconds = action == .none ? 2.5 : 6
-        case .finished(let cleanupFailed): seconds = cleanupFailed ? 2.5 : 1.4
+        case .finished(.needsAccess, _): seconds = 6
+        case .finished(.noTextField, _): seconds = 3
+        case .finished(_, let cleanupFailed): seconds = cleanupFailed ? 2.5 : 1.4
         default: seconds = 1.4
         }
         dismissTask = Task {

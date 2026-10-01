@@ -6,7 +6,8 @@ import SwiftUI
 /// Terminal commands for testing the speech models and for rendering the UI to images.
 enum DevTools {
     static let flags: Set<String> = [
-        "--transcribe", "--snapshot", "--cleanup-test", "--mic-test", "--unregister-login-item", "--help",
+        "--transcribe", "--snapshot", "--cleanup-test", "--mic-test", "--paste-test", "--unregister-login-item",
+        "--help",
     ]
 
     static func run(_ arguments: [String]) -> Never {
@@ -43,6 +44,10 @@ enum DevTools {
             }
             dispatchMain()
         }
+        if arguments.contains("--paste-test") {
+            MainActor.assumeIsolated { pasteTest() }
+            exit(0)
+        }
         if let choice = value(after: "--mic-test", in: arguments) {
             MainActor.assumeIsolated {
                 micTest(choice)
@@ -57,6 +62,7 @@ enum DevTools {
           Wisp --cleanup-test [--model <OpenRouter model ID>] [--glossary <names and terms>]
                               (the key comes from OPENROUTER_API_KEY or the keychain)
           Wisp --mic-test list|auto|system|<device UID>
+          Wisp --paste-test
         """)
         exit(2)
     }
@@ -93,6 +99,7 @@ enum DevTools {
     private static func snapshot(into folder: URL) {
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         _ = NSApplication.shared
+        APIKeyStore.readsKeychain = false
 
         let meter = AudioLevelMeter()
         meter.update(0.85)
@@ -101,10 +108,13 @@ enum DevTools {
             ("pill-starting", .starting, .ready),
             ("pill-recording", .recording(startedAt: now.addingTimeInterval(-7)), .ready),
             ("pill-polishing", .polishing, .ready),
-            ("pill-finished-without-cleanup", .finished(cleanupFailed: true), .ready),
+            ("pill-finished-without-cleanup", .finished(.copied, cleanupFailed: true), .ready),
+            ("pill-pasted", .finished(.pasted, cleanupFailed: false), .ready),
+            ("pill-no-text-field", .finished(.noTextField, cleanupFailed: false), .ready),
+            ("pill-needs-access", .finished(.needsAccess, cleanupFailed: false), .ready),
             ("pill-transcribing", .transcribing, .ready),
             ("pill-downloading", .transcribing, .downloading(0.42)),
-            ("pill-finished", .finished(cleanupFailed: false), .ready),
+            ("pill-finished", .finished(.copied, cleanupFailed: false), .ready),
             ("pill-failed", .failed(message: "Transcription failed", action: .retry), .ready),
             ("pill-microphone", .failed(message: "Microphone access is off", action: .openMicrophoneSettings), .ready),
         ]
@@ -225,6 +235,50 @@ enum DevTools {
                 let sorted = times.sorted()
                 print(String(format: "Median %.2f s, slowest %.2f s\n", sorted[sorted.count / 2], sorted.last!))
             }
+        }
+    }
+
+    // MARK: - Paste test
+
+    /// Checks the parts of auto-paste that work without a paste: the access, the V key of the
+    /// keyboard layout, the clipboard copy, and the focus check in each open app. Run it through
+    /// `open -n Wisp.app --args`, so that macOS uses Wisp's Accessibility access.
+    @MainActor
+    private static func pasteTest() {
+        print("Accessibility access: \(Accessibility.isTrusted ? "on" : "off")")
+        print("Key for Command-V: \(Keyboard.keyCode(for: "v").map(String.init) ?? "not found, uses the ANSI V key")")
+
+        // A private pasteboard, so that the test does not change the user's clipboard.
+        let pasteboard = NSPasteboard(name: NSPasteboard.Name("com.unculture.Wisp.paste-test"))
+        let first = NSPasteboardItem()
+        first.setString("plain", forType: .string)
+        first.setString("<b>rich</b>", forType: .html)
+        let second = NSPasteboardItem()
+        second.setString("https://example.com", forType: .URL)
+        pasteboard.clearContents()
+        pasteboard.writeObjects([first, second])
+        let snapshot = ClipboardSnapshot(pasteboard)
+        pasteboard.clearContents()
+        pasteboard.setString("transcript", forType: .string)
+        snapshot.restore(to: pasteboard)
+        let items = pasteboard.pasteboardItems ?? []
+        let restored = items.count == 2
+            && items[0].string(forType: .string) == "plain"
+            && items[0].string(forType: .html) == "<b>rich</b>"
+            && items[1].string(forType: .URL) == "https://example.com"
+        print("Clipboard copy and restore: \(restored ? "passed" : "FAILED")")
+        pasteboard.releaseGlobally()
+
+        guard Accessibility.isTrusted else { return }
+        print("Focused element in each open app:")
+        for app in NSWorkspace.shared.runningApplications where app.activationPolicy == .regular {
+            let focus = FocusedElement.inspect(pid: app.processIdentifier)
+            let verdict = switch focus.kind {
+            case .text: "paste"
+            case .unknown: "paste (unknown)"
+            case .notText: "copy only"
+            }
+            print("  \(app.localizedName ?? "?"): \(focus.role) -> \(verdict)")
         }
     }
 

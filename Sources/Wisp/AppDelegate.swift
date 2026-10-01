@@ -18,6 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var indicator: IndicatorController?
     private var statusItem: StatusItemController?
     private var hotKey: HotKey?
+    private var pasteHotKey: HotKey?
     private var subscriptions = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -42,6 +43,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         if hotKey == nil { warnShortcutUnavailable() }
 
+        NSLog("Wisp: Accessibility access is \(Accessibility.isTrusted ? "on" : "off")")
+        updatePasteShortcut(enabled: preferences.autoPaste)
+        if preferences.autoPaste && !preferences.askedForAccessibility { askForAccessibility() }
+        preferences.$autoPaste
+            .dropFirst()
+            .removeDuplicates()
+            .sink { [weak self] enabled in
+                self?.updatePasteShortcut(enabled: enabled)
+                if enabled { self?.askForAccessibility() }
+            }
+            .store(in: &subscriptions)
+
         if !preferences.hasLaunchedBefore {
             preferences.hasLaunchedBefore = true
             preferences.launchAtLogin = true
@@ -60,6 +73,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc func showSettings(_ sender: Any?) {
         settings.show()
+    }
+
+    /// ⌃⌘V pastes the last transcript. Wisp holds this shortcut only while auto-paste is on.
+    private func updatePasteShortcut(enabled: Bool) {
+        pasteHotKey = nil
+        guard enabled else { return }
+        pasteHotKey = HotKey(keyCode: Shortcut.pasteLastKeyCode, modifiers: controlKey | cmdKey) { [weak self] in
+            MainActor.assumeIsolated { self?.dictation.pasteLastTranscript() }
+        }
+        if pasteHotKey == nil { NSLog("Wisp: another app uses \(Shortcut.pasteLastDisplay)") }
+    }
+
+    private func askForAccessibility() {
+        guard !Accessibility.isTrusted else { return }
+        preferences.askedForAccessibility = true
+        Accessibility.requestAccess()
     }
 
     private func warnShortcutUnavailable() {

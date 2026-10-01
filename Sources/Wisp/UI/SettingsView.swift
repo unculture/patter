@@ -56,6 +56,7 @@ private struct GeneralSettings: View {
     @State private var devices: [AudioInputDevice] = []
     @State private var defaultDevice: AudioInputDevice?
     @State private var confirmingDeleteAll = false
+    @State private var accessibilityTrusted = Accessibility.isTrusted
 
     var body: some View {
         Form {
@@ -64,6 +65,29 @@ private struct GeneralSettings: View {
                     get: { preferences.launchAtLogin },
                     set: { preferences.launchAtLogin = $0 }))
                 Toggle("Play a sound when the microphone is ready, and when you stop", isOn: $preferences.playSounds)
+            }
+
+            Section {
+                Toggle("Paste into the text field that has the cursor", isOn: $preferences.autoPaste)
+                if preferences.autoPaste {
+                    if accessibilityTrusted {
+                        Label("Accessibility access is on", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(Theme.success)
+                    } else {
+                        HStack {
+                            Label {
+                                Text("Wisp needs Accessibility access to paste")
+                            } icon: {
+                                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                            }
+                            Spacer()
+                            Button("Open Privacy Settings") { Accessibility.openPrivacySettings() }
+                        }
+                    }
+                }
+            } footer: {
+                Text("Wisp pastes the transcript, then puts your clipboard back after half a second. If the cursor is not in a text field, Wisp copies the transcript to the clipboard. To paste the last transcript again, press \(Shortcut.pasteLastDisplay).")
+                    .settingsFootnote()
             }
 
             Section {
@@ -109,7 +133,14 @@ private struct GeneralSettings: View {
             }
         }
         .formStyle(.grouped)
-        .onAppear(perform: reloadDevices)
+        .onAppear {
+            reloadDevices()
+            accessibilityTrusted = Accessibility.isTrusted
+        }
+        // The user turns on the access in System Settings, then comes back to Wisp.
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            accessibilityTrusted = Accessibility.isTrusted
+        }
         .confirmationDialog(
             "Delete all \(store.transcripts.count) transcripts?",
             isPresented: $confirmingDeleteAll
