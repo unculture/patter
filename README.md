@@ -102,7 +102,7 @@ Wisp sends the transcript text, the names and terms, and the name of the app tha
 
 - Transcripts: `~/Library/Application Support/Wisp/transcripts.json`
 - Speech models: `~/Library/Application Support/FluidAudio/Models/`
-- OpenRouter API key: the login keychain, item "Wisp OpenRouter API key"
+- OpenRouter API key: the login keychain, item "Wisp OpenRouter key". Builds from before 1 October 2026 used an item named "Wisp OpenRouter API key". Wisp copies the key from it one time. Then you can delete the old item in Keychain Access.
 - Settings: the `com.unculture.Wisp` user defaults domain
 
 If Wisp cannot read the transcripts file, it keeps a copy named `transcripts.unreadable-<time>.json` next to it before it writes a new file.
@@ -111,7 +111,7 @@ If Wisp cannot read the transcripts file, it keeps a copy named `transcripts.unr
 
 If the indicator says "Microphone access is off", click Open Settings. Then turn on Wisp in Privacy & Security > Microphone.
 
-If macOS asks for microphone or keychain access again after you rebuild Wisp, click Allow. The app has an ad-hoc signature, and macOS sometimes treats a rebuilt app as a new app.
+After each rebuild, macOS asks one time whether Wisp can use its keychain item. The reason is that the keychain ties an item to the exact build of an app that has no Apple team ID. Click Always Allow. If you click Allow, macOS asks again at each launch.
 
 If Wisp says that the shortcut is not available, another app uses Control-Shift-R. Quit that app and open Wisp again.
 
@@ -130,7 +130,7 @@ To transcribe an audio file with a speech model, run the app binary from the ter
 .build/release/Wisp --transcribe speech.wav --engine multilingual
 ```
 
-To run sample transcripts through the AI cleanup with each preset model, run the command below. The command reads the key from `OPENROUTER_API_KEY`, or else from the keychain. To test one model, add `--model <model ID>`. To test a list of names and terms, add `--glossary "<names and terms>"`.
+To run sample transcripts through the AI cleanup with each preset model, run the command below. The command reads the key from `OPENROUTER_API_KEY`, or else from the keychain. Run the installed binary, as shown: the keychain treats a binary in the build folder as a different app and asks for access. To test one model, add `--model <model ID>`. To test a list of names and terms, add `--glossary "<names and terms>"`.
 
 ```sh
 /Applications/Wisp.app/Contents/MacOS/Wisp --cleanup-test
