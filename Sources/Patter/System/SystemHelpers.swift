@@ -53,14 +53,3 @@ enum Sounds {
         sound.play()
     }
 }
-
-enum Shortcut {
-    /// The dictation shortcut: Control-Shift-R.
-    static let keyCode = 0x0F  // kVK_ANSI_R
-    static let symbols = ["⌃", "⇧", "R"]
-    static let display = symbols.joined()
-
-    /// Pastes the last transcript again: Control-Command-V, the same shortcut as in Wispr Flow.
-    static let pasteLastKeyCode = 0x09  // kVK_ANSI_V
-    static let pasteLastDisplay = "⌃⌘V"
-}

@@ -10,7 +10,7 @@ final class HotKey {
     private let action: () -> Void
 
     /// Returns nil if the system refuses the shortcut, for example because another app registered it.
-    init?(keyCode: Int, modifiers: Int, action: @escaping () -> Void) {
+    init?(_ shortcut: Shortcut, action: @escaping () -> Void) {
         self.action = action
         id = Self.nextID
         Self.nextID += 1
@@ -37,8 +37,14 @@ final class HotKey {
 
         let hotKeyID = EventHotKeyID(signature: OSType(0x5041_5452), id: id)  // "PATR"
         let registerStatus = RegisterEventHotKey(
-            UInt32(keyCode), UInt32(modifiers), hotKeyID, GetApplicationEventTarget(), 0, &hotKeyRef)
-        guard registerStatus == noErr else { return nil }
+            UInt32(shortcut.keyCode), UInt32(shortcut.modifiers), hotKeyID, GetApplicationEventTarget(), 0,
+            &hotKeyRef)
+        guard registerStatus == noErr else {
+            // The handler holds an unretained pointer to this object, so it must not outlive it.
+            if let handlerRef { RemoveEventHandler(handlerRef) }
+            handlerRef = nil
+            return nil
+        }
     }
 
     deinit {

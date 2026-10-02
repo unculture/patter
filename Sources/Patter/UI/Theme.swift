@@ -45,13 +45,14 @@ struct KeyCap: View {
 }
 
 struct ShortcutKeys: View {
+    let shortcut: Shortcut
     var size: CGFloat = 12
 
     var body: some View {
         HStack(spacing: 4) {
-            ForEach(Shortcut.symbols, id: \.self) { KeyCap(symbol: $0, size: size) }
+            ForEach(Array(shortcut.symbols.enumerated()), id: \.offset) { KeyCap(symbol: $0.element, size: size) }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Control Shift R")
+        .accessibilityLabel(shortcut.spokenName)
     }
 }

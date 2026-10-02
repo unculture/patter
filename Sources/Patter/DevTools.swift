@@ -146,7 +146,8 @@ enum DevTools {
         }
         for tab in SettingsView.Tab.allCases {
             let view = SettingsView(
-                preferences: .shared, engine: engine, store: store, apiKeys: .shared, initialTab: tab)
+                preferences: .shared, engine: engine, store: store, apiKeys: .shared,
+                shortcuts: ShortcutController(preferences: .shared), initialTab: tab)
             let name = tab == .general ? "settings-general" : "settings-cleanup"
             write(windowImage(of: view, appearance: .aqua, size: NSSize(width: 520, height: 660)),
                   to: folder.appendingPathComponent("\(name).png"))

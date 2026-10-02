@@ -64,9 +64,13 @@ final class HistoryWindowController: AppWindowController {
 
 @MainActor
 final class SettingsWindowController: AppWindowController {
-    init(preferences: Preferences, engine: SpeechEngine, store: TranscriptStore, apiKeys: APIKeyStore) {
+    init(
+        preferences: Preferences, engine: SpeechEngine, store: TranscriptStore, apiKeys: APIKeyStore,
+        shortcuts: ShortcutController
+    ) {
         super.init(title: "Patter Settings", size: NSSize(width: 520, height: 660), resizable: false) {
-            AnyView(SettingsView(preferences: preferences, engine: engine, store: store, apiKeys: apiKeys))
+            AnyView(SettingsView(
+                preferences: preferences, engine: engine, store: store, apiKeys: apiKeys, shortcuts: shortcuts))
         }
     }
 }

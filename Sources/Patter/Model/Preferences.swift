@@ -36,6 +36,7 @@ final class Preferences: ObservableObject {
         static let glossary = "glossary"
         static let autoPaste = "autoPaste"
         static let askedForAccessibility = "askedForAccessibility"
+        static let dictationShortcut = "dictationShortcut"
     }
 
     private let defaults = UserDefaults.standard
@@ -69,6 +70,11 @@ final class Preferences: ObservableObject {
     /// Paste each transcript into the focused text field of the app in front, as Wispr Flow does.
     @Published var autoPaste: Bool {
         didSet { defaults.set(autoPaste, forKey: Key.autoPaste) }
+    }
+
+    /// Starts and stops dictation. Nil when the user removed the shortcut.
+    @Published var dictationShortcut: Shortcut? {
+        didSet { defaults.set(dictationShortcut?.storedValue ?? [:], forKey: Key.dictationShortcut) }
     }
 
     /// Whether Patter showed the system dialog that asks for Accessibility access.
@@ -107,5 +113,15 @@ final class Preferences: ObservableObject {
         cleanupModel = defaults.string(forKey: Key.cleanupModel) ?? CleanupModel.presets[0].id
         glossary = defaults.string(forKey: Key.glossary) ?? ""
         autoPaste = defaults.object(forKey: Key.autoPaste) as? Bool ?? true
+        // An optional property starts as nil, so a plain assignment here would run didSet and store
+        // the default. Patter stores a shortcut only when the user changes it.
+        _dictationShortcut = Published(
+            initialValue: Self.storedShortcut(defaults, key: Key.dictationShortcut, default: .defaultDictation))
+    }
+
+    /// No stored value means the default. An empty value means that the user removed the shortcut.
+    private static func storedShortcut(_ defaults: UserDefaults, key: String, default fallback: Shortcut?) -> Shortcut? {
+        guard let stored = defaults.dictionary(forKey: key) as? [String: Int] else { return fallback }
+        return Shortcut(storedValue: stored)
     }
 }

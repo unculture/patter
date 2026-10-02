@@ -197,30 +197,49 @@ enum Keyboard {
     /// The key that types the character while Command is down. Text Input Sources work only on the main thread.
     @MainActor
     static func keyCode(for character: String) -> CGKeyCode? {
-        let layouts = [TISCopyCurrentKeyboardLayoutInputSource(), TISCopyCurrentASCIICapableKeyboardLayoutInputSource()]
+        let layouts = layoutData([TISCopyCurrentKeyboardLayoutInputSource(), TISCopyCurrentASCIICapableKeyboardLayoutInputSource()])
         for layout in layouts {
-            guard let source = layout?.takeRetainedValue(),
-                  let pointer = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData)
-            else { continue }
-            let data = Unmanaged<CFData>.fromOpaque(pointer).takeUnretainedValue() as Data
-            let found: CGKeyCode? = data.withUnsafeBytes { buffer in
-                guard let keyboard = buffer.baseAddress?.assumingMemoryBound(to: UCKeyboardLayout.self) else { return nil }
-                for code in 0..<128 {
-                    var deadKeys: UInt32 = 0
-                    var length = 0
-                    var characters = [UniChar](repeating: 0, count: 4)
-                    let status = UCKeyTranslate(
-                        keyboard, UInt16(code), UInt16(kUCKeyActionDown), UInt32((cmdKey >> 8) & 0xFF),
-                        UInt32(LMGetKbdType()), OptionBits(kUCKeyTranslateNoDeadKeysMask),
-                        &deadKeys, characters.count, &length, &characters)
-                    if status == noErr, String(utf16CodeUnits: characters, count: length) == character {
-                        return CGKeyCode(code)
-                    }
-                }
-                return nil
+            for code in 0..<128 where translate(code, modifiers: cmdKey, in: layout) == character {
+                return CGKeyCode(code)
             }
-            if let found { return found }
         }
         return nil
+    }
+
+    /// The character that the key types without modifier keys, to show it in a shortcut. Like the
+    /// menus, it uses the ASCII-capable layout, so that a Russian layout shows R and not К.
+    @MainActor
+    static func character(for keyCode: Int) -> String? {
+        guard let layout = layoutData([TISCopyCurrentASCIICapableKeyboardLayoutInputSource()]).first,
+              let text = translate(keyCode, modifiers: 0, in: layout),
+              !text.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains)
+        else { return nil }
+        return text
+    }
+
+    @MainActor
+    private static func layoutData(_ sources: [Unmanaged<TISInputSource>?]) -> [Data] {
+        sources.compactMap { source in
+            guard let source = source?.takeRetainedValue(),
+                  let pointer = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData)
+            else { return nil }
+            return Unmanaged<CFData>.fromOpaque(pointer).takeUnretainedValue() as Data
+        }
+    }
+
+    /// The text that the key types in the layout while the modifier keys (Carbon flags) are down.
+    private static func translate(_ keyCode: Int, modifiers: Int, in layout: Data) -> String? {
+        layout.withUnsafeBytes { buffer in
+            guard let keyboard = buffer.baseAddress?.assumingMemoryBound(to: UCKeyboardLayout.self) else { return nil }
+            var deadKeys: UInt32 = 0
+            var length = 0
+            var characters = [UniChar](repeating: 0, count: 4)
+            let status = UCKeyTranslate(
+                keyboard, UInt16(keyCode), UInt16(kUCKeyActionDown), UInt32((modifiers >> 8) & 0xFF),
+                UInt32(LMGetKbdType()), OptionBits(kUCKeyTranslateNoDeadKeysMask),
+                &deadKeys, characters.count, &length, &characters)
+            guard status == noErr, length > 0 else { return nil }
+            return String(utf16CodeUnits: characters, count: length)
+        }
     }
 }
