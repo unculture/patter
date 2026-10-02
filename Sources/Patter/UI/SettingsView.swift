@@ -70,7 +70,7 @@ private struct GeneralSettings: View {
             } header: {
                 Text("Shortcuts")
             } footer: {
-                Text("Press the dictation shortcut in any app to start, and press it again to stop. To change a shortcut, click it and press the new keys. To cancel, press Escape.")
+                Text("Press the dictation shortcut in any app to start, and press it again to stop. For a short message, hold the push-to-talk shortcut while you talk, and release it to stop. To change a shortcut, click it and press the new keys. To cancel, press Escape.")
                     .settingsFootnote()
             }
 

@@ -34,7 +34,9 @@ final class DictationController: ObservableObject {
         case failed(message: String, action: FailureAction)
     }
 
-    @Published private(set) var phase: Phase = .idle
+    @Published private(set) var phase: Phase = .idle {
+        didSet { if !isRecording { stopsOnRelease = false } }
+    }
 
     let recorder = AudioRecorder()
     private let engine: SpeechEngine
@@ -44,6 +46,10 @@ final class DictationController: ObservableObject {
     private let log = Logger(subsystem: "com.unculture.Patter", category: "dictation")
 
     private var lastToggle = Date.distantPast
+    /// Whether the user holds the push-to-talk shortcut down.
+    private var pushToTalkHeld = false
+    /// The current recording stops when the user releases the push-to-talk shortcut.
+    private var stopsOnRelease = false
     private var dismissTask: Task<Void, Never>?
     private var cleanupTask: Task<String, Error>?
     private var cleanupSkipped = false
@@ -91,6 +97,30 @@ final class DictationController: ObservableObject {
         case .transcribing, .polishing: break
         case .idle, .finished, .failed: start()
         }
+    }
+
+    /// Push to talk: records while the user holds the shortcut down.
+    func pushToTalkPressed() {
+        // Key repeat can send more presses while the user holds the shortcut.
+        guard !pushToTalkHeld else { return }
+        pushToTalkHeld = true
+        switch phase {
+        case .starting, .recording, .transcribing, .polishing: return
+        case .idle, .finished, .failed: break
+        }
+        guard Microphone.status != .notDetermined else {
+            // The access dialog takes the keyboard focus, so ask for access and do not record yet.
+            Task { _ = await Microphone.requestAccess() }
+            return
+        }
+        stopsOnRelease = true
+        start()
+    }
+
+    func pushToTalkReleased() {
+        pushToTalkHeld = false
+        // Before the microphone is ready, stop() cancels: there is no speech to transcribe yet.
+        if stopsOnRelease { stop() }
     }
 
     func start() {

@@ -6,12 +6,15 @@ import Combine
 enum ShortcutAction: CaseIterable, Identifiable {
     /// Press the shortcut to start dictation, and press it again to stop.
     case dictation
+    /// Hold the shortcut down while you talk. Patter stops when you release it.
+    case pushToTalk
 
     var id: Self { self }
 
     var title: String {
         switch self {
         case .dictation: "Start and stop dictation"
+        case .pushToTalk: "Push to talk"
         }
     }
 
@@ -19,6 +22,7 @@ enum ShortcutAction: CaseIterable, Identifiable {
     var shortName: String {
         switch self {
         case .dictation: "dictation shortcut"
+        case .pushToTalk: "push-to-talk shortcut"
         }
     }
 }
@@ -55,6 +59,10 @@ final class ShortcutController: ObservableObject {
             .removeDuplicates()
             .sink { [weak self] shortcut in self?.register(.dictation, shortcut) }
             .store(in: &subscriptions)
+        preferences.$pushToTalkShortcut
+            .removeDuplicates()
+            .sink { [weak self] shortcut in self?.register(.pushToTalk, shortcut) }
+            .store(in: &subscriptions)
         preferences.$autoPaste
             .removeDuplicates()
             .sink { [weak self] enabled in self?.registerPasteLast(enabled) }
@@ -64,6 +72,7 @@ final class ShortcutController: ObservableObject {
     func shortcut(for action: ShortcutAction) -> Shortcut? {
         switch action {
         case .dictation: preferences.dictationShortcut
+        case .pushToTalk: preferences.pushToTalkShortcut
         }
     }
 
@@ -71,6 +80,7 @@ final class ShortcutController: ObservableObject {
     func setShortcut(_ shortcut: Shortcut?, for action: ShortcutAction) {
         switch action {
         case .dictation: preferences.dictationShortcut = shortcut
+        case .pushToTalk: preferences.pushToTalkShortcut = shortcut
         }
     }
 
@@ -81,7 +91,7 @@ final class ShortcutController: ObservableObject {
     func startRecording(_ action: ShortcutAction) {
         stopRecording()
         recording = action
-        hotKeys.removeAll()
+        ShortcutAction.allCases.forEach(removeHotKey)
         pasteHotKey = nil
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .flagsChanged]) { [weak self] event in
             guard let self else { return event }
@@ -147,7 +157,7 @@ final class ShortcutController: ObservableObject {
 
     private func register(_ action: ShortcutAction, _ shortcut: Shortcut?) {
         // Unregister the old shortcut first, so that the system accepts the same keys again.
-        hotKeys[action] = nil
+        removeHotKey(action)
         guard recording == nil else { return }
         guard let shortcut else {
             unavailable.remove(action)
@@ -159,6 +169,12 @@ final class ShortcutController: ObservableObject {
             hotKey = HotKey(shortcut) { [weak self] in
                 MainActor.assumeIsolated { self?.dictation?.toggle() }
             }
+        case .pushToTalk:
+            hotKey = HotKey(shortcut) { [weak self] in
+                MainActor.assumeIsolated { self?.dictation?.pushToTalkPressed() }
+            } onRelease: { [weak self] in
+                MainActor.assumeIsolated { self?.dictation?.pushToTalkReleased() }
+            }
         }
         hotKeys[action] = hotKey
         if hotKey == nil {
@@ -166,6 +182,12 @@ final class ShortcutController: ObservableObject {
         } else {
             unavailable.remove(action)
         }
+    }
+
+    private func removeHotKey(_ action: ShortcutAction) {
+        guard hotKeys.removeValue(forKey: action) != nil else { return }
+        // The release of a shortcut that is no longer registered never arrives.
+        if action == .pushToTalk { dictation?.pushToTalkReleased() }
     }
 
     /// ⌃⌘V pastes the last transcript. Patter holds this shortcut only while auto-paste is on.

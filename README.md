@@ -1,6 +1,6 @@
 # Patter
 
-Patter is a menu bar dictation app for macOS. You press Control-Shift-R, talk, and press it again. Patter transcribes the speech on your Mac, pastes the text at the cursor, and saves it in a history window. An optional AI cleanup pass removes filler words, applies your self-corrections, and formats lists.
+Patter is a menu bar dictation app for macOS. You press Control-Shift-R, talk, and press it again. For a short message, you can also hold a push-to-talk shortcut while you talk. Patter transcribes the speech on your Mac, pastes the text at the cursor, and saves it in a history window. An optional AI cleanup pass removes filler words, applies your self-corrections, and formats lists.
 
 ## Requirements
 
@@ -53,15 +53,21 @@ The transcripts window lists every transcript, newest first, grouped by day. Eac
 
 ## Shortcuts
 
-To change the dictation shortcut, do these steps:
+Patter has two shortcuts for dictation. You press the dictation shortcut one time to start and again to stop. The default is Control-Shift-R.
+
+The push-to-talk shortcut records only while you hold it down. When you release it, Patter stops the recording and pastes the text. Push to talk is good for short messages. It is off until you set a shortcut.
+
+To set or change a shortcut, do these steps:
 
 1. Open Settings > General.
-2. Under Shortcuts, click the field next to "Start and stop dictation".
-3. Press the new keys, for example Control-Option-D. To cancel, press Escape.
+2. Under Shortcuts, click the field next to "Start and stop dictation" or "Push to talk".
+3. Press the new keys, for example Control-Option-Space. To cancel, press Escape.
 
-To remove the shortcut, click the X button in the field. You can then start dictation from the menu bar icon.
+To remove a shortcut, click the X button in its field. Without a dictation shortcut, you can start dictation from the menu bar icon.
 
-A shortcut must include Control or Command, because Patter must not take a key that you type. A function key, for example F5, also works alone. Patter does not accept Control-Command-V, because that shortcut pastes the last transcript.
+To use push to talk, hold the shortcut down. Wait for the start sound, then talk. Release the shortcut when you finish. If you release it before the start sound, Patter discards the recording. A Bluetooth microphone takes about one second to start.
+
+A shortcut must include Control or Command, because Patter must not take a key that you type. A function key, for example F5, also works alone. The two shortcuts must be different. Patter does not accept Control-Command-V, because that shortcut pastes the last transcript.
 
 If another app uses the shortcut, Settings shows a warning. Choose a different shortcut.
 
