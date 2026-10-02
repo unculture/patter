@@ -7,32 +7,41 @@ final class HotKey {
     private let id: UInt32
     private var hotKeyRef: EventHotKeyRef?
     private var handlerRef: EventHandlerRef?
-    private let action: () -> Void
+    private let onPress: () -> Void
+    private let onRelease: (() -> Void)?
 
     /// Returns nil if the system refuses the shortcut, for example because another app registered it.
-    init?(_ shortcut: Shortcut, action: @escaping () -> Void) {
-        self.action = action
+    /// `onRelease` runs when the user lets go of the key.
+    init?(_ shortcut: Shortcut, onPress: @escaping () -> Void, onRelease: (() -> Void)? = nil) {
+        self.onPress = onPress
+        self.onRelease = onRelease
         id = Self.nextID
         Self.nextID += 1
 
-        var eventType = EventTypeSpec(
-            eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
+        var eventTypes = [
+            EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed)),
+            EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyReleased)),
+        ]
         let installStatus = InstallEventHandler(
             GetApplicationEventTarget(),
             { _, event, userData in
                 guard let event, let userData else { return OSStatus(eventNotHandledErr) }
-                // Each hot key has its own handler, and every handler sees every press: pass the
-                // presses of other hot keys on.
+                // Each hot key has its own handler, and every handler sees every press and release:
+                // pass the events of other hot keys on.
                 var pressed = EventHotKeyID()
                 let status = GetEventParameter(
                     event, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID),
                     nil, MemoryLayout<EventHotKeyID>.size, nil, &pressed)
                 let hotKey = Unmanaged<HotKey>.fromOpaque(userData).takeUnretainedValue()
                 guard status == noErr, pressed.id == hotKey.id else { return OSStatus(eventNotHandledErr) }
-                hotKey.action()
+                if GetEventKind(event) == UInt32(kEventHotKeyReleased) {
+                    hotKey.onRelease?()
+                } else {
+                    hotKey.onPress()
+                }
                 return noErr
             },
-            1, &eventType, Unmanaged.passUnretained(self).toOpaque(), &handlerRef)
+            eventTypes.count, &eventTypes, Unmanaged.passUnretained(self).toOpaque(), &handlerRef)
         guard installStatus == noErr else { return nil }
 
         let hotKeyID = EventHotKeyID(signature: OSType(0x5041_5452), id: id)  // "PATR"

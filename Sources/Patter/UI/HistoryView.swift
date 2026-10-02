@@ -19,7 +19,9 @@ struct HistoryView: View {
                 .padding(.bottom, 18)
 
             if store.transcripts.isEmpty {
-                EmptyHistoryView(engine: engine, shortcut: preferences.dictationShortcut)
+                EmptyHistoryView(
+                    engine: engine, dictationShortcut: preferences.dictationShortcut,
+                    pushToTalkShortcut: preferences.pushToTalkShortcut)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
@@ -34,7 +36,9 @@ struct HistoryView: View {
             }
 
             Divider().opacity(0.6)
-            StatusBar(engine: engine, shortcut: preferences.dictationShortcut)
+            StatusBar(
+                engine: engine, dictationShortcut: preferences.dictationShortcut,
+                pushToTalkShortcut: preferences.pushToTalkShortcut)
         }
         .background(WindowBackground())
         .overlay(alignment: .bottom) { undoToast }
@@ -431,7 +435,8 @@ private struct SearchField: View {
 
 struct EmptyHistoryView: View {
     @ObservedObject var engine: SpeechEngine
-    let shortcut: Shortcut?
+    let dictationShortcut: Shortcut?
+    let pushToTalkShortcut: Shortcut?
 
     var body: some View {
         VStack(spacing: 18) {
@@ -454,7 +459,16 @@ struct EmptyHistoryView: View {
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 360)
             }
-            if let shortcut { ShortcutKeys(shortcut: shortcut, size: 15) }
+            VStack(alignment: .leading, spacing: 10) {
+                // With two shortcuts, a label tells them apart.
+                let both = dictationShortcut != nil && pushToTalkShortcut != nil
+                if let dictationShortcut {
+                    shortcutRow(dictationShortcut, label: both ? "Start and stop" : nil)
+                }
+                if let pushToTalkShortcut {
+                    shortcutRow(pushToTalkShortcut, label: both ? "Hold to talk" : nil)
+                }
+            }
             if case .downloading = engine.state {
                 Text("Patter is downloading its speech model (\(engine.kind.downloadSize)). This happens one time only.")
                     .font(.system(size: 12))
@@ -466,17 +480,36 @@ struct EmptyHistoryView: View {
         .padding(.bottom, 30)
     }
 
-    private var instructions: String {
-        guard shortcut != nil else {
-            return "Click the Patter icon in the menu bar, choose Start Dictation, and start talking. To dictate with a shortcut, set one in Settings."
+    private func shortcutRow(_ shortcut: Shortcut, label: String?) -> some View {
+        HStack(spacing: 10) {
+            ShortcutKeys(shortcut: shortcut, size: 15)
+            if let label {
+                Text(label)
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+            }
         }
-        return "Press the shortcut in any app and start talking. Press it again to stop. Patter pastes the text at the cursor, or copies it to the clipboard, and saves it here."
+    }
+
+    private var instructions: String {
+        let result = "Patter pastes the text at the cursor, or copies it to the clipboard, and saves it here."
+        switch (dictationShortcut, pushToTalkShortcut) {
+        case (nil, nil):
+            return "Click the Patter icon in the menu bar, choose Start Dictation, and start talking. To dictate with a shortcut, set one in Settings."
+        case (nil, _?):
+            return "Hold the shortcut in any app and talk. Release it to stop. " + result
+        case (_?, nil):
+            return "Press the shortcut in any app and start talking. Press it again to stop. " + result
+        case (_?, _?):
+            return "Press a shortcut in any app and start talking. " + result
+        }
     }
 }
 
 struct StatusBar: View {
     @ObservedObject var engine: SpeechEngine
-    let shortcut: Shortcut?
+    let dictationShortcut: Shortcut?
+    let pushToTalkShortcut: Shortcut?
 
     var body: some View {
         HStack(spacing: 8) {
@@ -494,11 +527,18 @@ struct StatusBar: View {
                     .font(.system(size: 11.5, weight: .medium))
             }
             Spacer()
-            if let shortcut {
+            if let dictationShortcut {
                 Text("Dictate")
                     .font(.system(size: 11.5))
                     .foregroundStyle(.secondary)
-                ShortcutKeys(shortcut: shortcut, size: 10)
+                ShortcutKeys(shortcut: dictationShortcut, size: 10)
+            }
+            if let pushToTalkShortcut {
+                Text("Hold to talk")
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, dictationShortcut == nil ? 0 : 8)
+                ShortcutKeys(shortcut: pushToTalkShortcut, size: 10)
             }
         }
         .padding(.horizontal, 20)

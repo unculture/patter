@@ -37,6 +37,7 @@ final class Preferences: ObservableObject {
         static let autoPaste = "autoPaste"
         static let askedForAccessibility = "askedForAccessibility"
         static let dictationShortcut = "dictationShortcut"
+        static let pushToTalkShortcut = "pushToTalkShortcut"
     }
 
     private let defaults = UserDefaults.standard
@@ -75,6 +76,11 @@ final class Preferences: ObservableObject {
     /// Starts and stops dictation. Nil when the user removed the shortcut.
     @Published var dictationShortcut: Shortcut? {
         didSet { defaults.set(dictationShortcut?.storedValue ?? [:], forKey: Key.dictationShortcut) }
+    }
+
+    /// Records while the user holds it down. Nil, the default, turns push to talk off.
+    @Published var pushToTalkShortcut: Shortcut? {
+        didSet { defaults.set(pushToTalkShortcut?.storedValue ?? [:], forKey: Key.pushToTalkShortcut) }
     }
 
     /// Whether Patter showed the system dialog that asks for Accessibility access.
@@ -117,6 +123,8 @@ final class Preferences: ObservableObject {
         // the default. Patter stores a shortcut only when the user changes it.
         _dictationShortcut = Published(
             initialValue: Self.storedShortcut(defaults, key: Key.dictationShortcut, default: .defaultDictation))
+        _pushToTalkShortcut = Published(
+            initialValue: Self.storedShortcut(defaults, key: Key.pushToTalkShortcut, default: nil))
     }
 
     /// No stored value means the default. An empty value means that the user removed the shortcut.
