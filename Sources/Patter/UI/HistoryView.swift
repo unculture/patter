@@ -20,7 +20,7 @@ struct HistoryView: View {
 
             if store.transcripts.isEmpty {
                 EmptyHistoryView(
-                    engine: engine, dictationShortcut: preferences.dictationShortcut,
+                    dictationShortcut: preferences.dictationShortcut,
                     pushToTalkShortcut: preferences.pushToTalkShortcut)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -65,6 +65,10 @@ struct HistoryView: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(.secondary)
                 .help("Settings")
+            }
+
+            if engine.state.blocksDictation {
+                ModelDownloadBanner(engine: engine)
             }
 
             if !store.transcripts.isEmpty {
@@ -434,7 +438,6 @@ private struct SearchField: View {
 // MARK: - Empty state, status bar, background
 
 struct EmptyHistoryView: View {
-    @ObservedObject var engine: SpeechEngine
     let dictationShortcut: Shortcut?
     let pushToTalkShortcut: Shortcut?
 
@@ -469,13 +472,6 @@ struct EmptyHistoryView: View {
                     shortcutRow(pushToTalkShortcut, label: both ? "Hold to talk" : nil)
                 }
             }
-            if case .downloading = engine.state {
-                Text("Patter is downloading its speech model (\(engine.kind.downloadSize)). This happens one time only.")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 360)
-            }
         }
         .padding(.bottom, 30)
     }
@@ -502,6 +498,71 @@ struct EmptyHistoryView: View {
             return "Press the shortcut in any app and start talking. Press it again to stop. " + result
         case (_?, _?):
             return "Press a shortcut in any app and start talking. " + result
+        }
+    }
+}
+
+/// Dictation does not work until the speech model is on disk. The banner shows the download.
+struct ModelDownloadBanner: View {
+    @ObservedObject var engine: SpeechEngine
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: isFailed ? "exclamationmark.triangle.fill" : "arrow.down.circle.fill")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundStyle(isFailed ? Theme.warning : Theme.blue)
+            VStack(alignment: .leading, spacing: 6) {
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold))
+                Text(detail)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if case .downloading(let fraction) = engine.state {
+                    HStack(spacing: 10) {
+                        ProgressView(value: fraction)
+                            .progressViewStyle(.linear)
+                        Text("\(Int(fraction * 100))%")
+                            .font(.system(size: 12, weight: .medium))
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                            .frame(minWidth: 34, alignment: .trailing)
+                    }
+                    .padding(.top, 2)
+                }
+            }
+            if isFailed {
+                Spacer()
+                Button("Retry", action: engine.retry)
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.primary.opacity(0.05))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
+        )
+    }
+
+    private var isFailed: Bool {
+        if case .failed = engine.state { return true }
+        return false
+    }
+
+    private var title: String {
+        isFailed ? "The speech model did not download" : "Downloading the \(engine.kind.title) speech model"
+    }
+
+    private var detail: String {
+        switch engine.state {
+        case .failed(let message):
+            "\(message) Dictation works when the download finishes."
+        default:
+            "Dictation works when the download finishes. Patter downloads each model one time only (\(engine.kind.downloadSize))."
         }
     }
 }
@@ -557,7 +618,7 @@ struct StatusBar: View {
 extension SpeechEngine {
     var statusText: String {
         switch state {
-        case .idle: "Starting"
+        case .idle: "Loading \(kind.title) model"
         case .downloading(let fraction): "Downloading \(kind.title) model: \(Int(fraction * 100))%"
         case .preparing: "Preparing \(kind.title) model"
         case .ready: "\(kind.title) model ready. Runs on this Mac."

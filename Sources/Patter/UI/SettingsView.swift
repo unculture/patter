@@ -40,7 +40,7 @@ struct SettingsView: View {
 
             switch tab {
             case .general:
-                GeneralSettings(preferences: preferences, store: store, shortcuts: shortcuts)
+                GeneralSettings(preferences: preferences, engine: engine, store: store, shortcuts: shortcuts)
             case .cleanup:
                 CleanupSettings(preferences: preferences, apiKeys: apiKeys)
             }
@@ -53,6 +53,7 @@ struct SettingsView: View {
 
 private struct GeneralSettings: View {
     @ObservedObject var preferences: Preferences
+    @ObservedObject var engine: SpeechEngine
     @ObservedObject var store: TranscriptStore
     @ObservedObject var shortcuts: ShortcutController
 
@@ -132,6 +133,24 @@ private struct GeneralSettings: View {
                     }
                 }
                 .pickerStyle(.radioGroup)
+
+                if case .downloading(let fraction) = engine.state {
+                    ProgressView(value: fraction) {
+                        Text("Downloading the \(engine.kind.title) model: \(Int(fraction * 100))%")
+                    } currentValueLabel: {
+                        Text("Dictation works when the download finishes.")
+                    }
+                } else if case .failed(let message) = engine.state {
+                    HStack {
+                        Label {
+                            Text("The model did not download. \(message)")
+                        } icon: {
+                            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+                        }
+                        Spacer()
+                        Button("Retry", action: engine.retry)
+                    }
+                }
             } footer: {
                 Text("Both models run on this Mac. Your audio never leaves your computer.")
                     .settingsFootnote()

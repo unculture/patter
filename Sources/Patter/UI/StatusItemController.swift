@@ -37,12 +37,29 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.autoenablesItems = false
         statusItem.menu = menu
 
+        // A @Published publisher sends the new value before the property changes: use the values it sends.
+        let modelProblem = engine.$state
+            .map { state -> ModelProblem? in
+                switch state {
+                case .downloading: .downloading
+                case .failed: .failed
+                case .idle, .preparing, .ready: nil
+                }
+            }
+            .removeDuplicates()
         dictation.$phase
-            .sink { [weak self] phase in self?.updateIcon(for: phase) }
+            .combineLatest(modelProblem)
+            .sink { [weak self] phase, problem in self?.updateIcon(for: phase, modelProblem: problem) }
             .store(in: &subscriptions)
     }
 
-    private func updateIcon(for phase: DictationController.Phase) {
+    /// Why dictation does not work yet. The menu bar icon shows it.
+    private enum ModelProblem {
+        case downloading
+        case failed
+    }
+
+    private func updateIcon(for phase: DictationController.Phase, modelProblem: ModelProblem?) {
         guard let button = statusItem.button else { return }
         let symbol: String
         let tint: NSColor?
@@ -53,9 +70,18 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         case .transcribing, .polishing:
             symbol = "waveform.circle"
             tint = nil
-        case .idle, .finished, .failed:
-            symbol = "waveform"
+        case .idle, .finished, .failed, .waitingForModel:
+            switch modelProblem {
+            case .downloading: symbol = "arrow.down.circle"
+            case .failed: symbol = "exclamationmark.triangle"
+            case nil: symbol = "waveform"
+            }
             tint = nil
+        }
+        switch modelProblem {
+        case .downloading: button.toolTip = "Patter is downloading its speech model. Dictation works when the download finishes."
+        case .failed: button.toolTip = "The speech model did not download. Open the menu to try again."
+        case nil: button.toolTip = nil
         }
         let configuration = NSImage.SymbolConfiguration(pointSize: 14, weight: .semibold)
         let image = NSImage(systemSymbolName: symbol, accessibilityDescription: "Patter")?
@@ -69,6 +95,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
 
+        // While dictation does not work, the reason comes first.
+        let modelBlocksDictation = engine.state.blocksDictation
+        if modelBlocksDictation {
+            addModelStatus(to: menu)
+            menu.addItem(.separator())
+        }
+
         let dictateTitle: String
         let busy = dictation.phase == .transcribing || dictation.phase == .polishing
         if dictation.isRecording {
@@ -80,7 +113,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         }
         let dictate = item(dictateTitle, action: #selector(toggleDictation))
         if let shortcut = preferences.dictationShortcut { dictate.setShortcut(shortcut) }
-        dictate.isEnabled = !busy
+        // While the model downloads, a new dictation cannot start. A running one can still stop.
+        var startBlocked = false
+        if case .downloading = engine.state { startBlocked = !dictation.isRecording }
+        dictate.isEnabled = !busy && !startBlocked
         menu.addItem(dictate)
 
         let copyLast = item("Copy Last Transcript", action: #selector(copyLastTranscript))
@@ -128,16 +164,29 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.addItem(microphone)
         menu.addItem(item("Settings…", action: #selector(showSettings), key: ","))
 
-        menu.addItem(.separator())
-        let status = NSMenuItem(title: engine.statusText, action: nil, keyEquivalent: "")
-        status.isEnabled = false
-        menu.addItem(status)
-        if case .failed = engine.state {
-            menu.addItem(item("Retry Model Download", action: #selector(retryModel)))
+        if !modelBlocksDictation {
+            menu.addItem(.separator())
+            addModelStatus(to: menu)
         }
 
         menu.addItem(.separator())
         menu.addItem(item("Quit Patter", action: #selector(quit), key: "q"))
+    }
+
+    private func addModelStatus(to menu: NSMenu) {
+        let status = NSMenuItem(title: engine.statusText, action: nil, keyEquivalent: "")
+        status.isEnabled = false
+        menu.addItem(status)
+        switch engine.state {
+        case .downloading:
+            let note = NSMenuItem(title: "Dictation works when the download finishes", action: nil, keyEquivalent: "")
+            note.isEnabled = false
+            menu.addItem(note)
+        case .failed:
+            menu.addItem(item("Retry Model Download", action: #selector(retryModel)))
+        case .idle, .preparing, .ready:
+            break
+        }
     }
 
     private func microphoneMenu() -> NSMenu {

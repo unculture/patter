@@ -56,11 +56,21 @@ extension EngineKind {
 @MainActor
 final class SpeechEngine: ObservableObject {
     enum State: Equatable {
+        /// Loading has started. The state changes to downloading only if the model is not on disk.
         case idle
         case downloading(Double)
+        /// The files are on disk. Core ML loads the model and sets it up for the Neural Engine.
         case preparing
         case ready
         case failed(String)
+
+        /// The model is not on disk yet, so a recording cannot be transcribed for minutes, or at all.
+        var blocksDictation: Bool {
+            switch self {
+            case .downloading, .failed: true
+            case .idle, .preparing, .ready: false
+            }
+        }
     }
 
     @Published private(set) var state: State = .idle
@@ -71,11 +81,18 @@ final class SpeechEngine: ObservableObject {
 
     var isReady: Bool { state == .ready }
 
+    init() {}
+
+    /// For the snapshots of the developer tools.
+    init(snapshotState: State) {
+        state = snapshotState
+    }
+
     func load(_ kind: EngineKind) {
         self.kind = kind
         generation += 1
         let current = generation
-        state = .downloading(0)
+        state = .idle
 
         let task = Task<TranscriptionBackend, Error> {
             let backend = kind.makeBackend()
@@ -117,10 +134,16 @@ final class SpeechEngine: ObservableObject {
     private func report(_ progress: DownloadProgress, generation: Int) {
         guard generation == self.generation, state != .ready else { return }
         switch progress.phase {
-        case .compiling:
+        case .listing:
+            // FluidAudio lists the remote files only when it must download.
+            state = .downloading(0)
+        case .downloading(let completedFiles, let totalFiles) where completedFiles < totalFiles:
+            // FluidAudio 0.17.4 reports a model download as the first half of the load, from 0 to 0.5,
+            // and the Core ML compile as the second half. Patter shows the download from 0 to 100%.
+            state = .downloading(min(max(progress.fractionCompleted * 2, 0), 1))
+        case .downloading, .compiling:
+            // All the files are on disk: the download finished, or the model was there already.
             state = .preparing
-        case .listing, .downloading:
-            state = .downloading(min(max(progress.fractionCompleted, 0), 1))
         }
     }
 }

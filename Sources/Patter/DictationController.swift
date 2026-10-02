@@ -32,6 +32,8 @@ final class DictationController: ObservableObject {
         case polishing
         case finished(Delivery, cleanupFailed: Bool)
         case failed(message: String, action: FailureAction)
+        /// Patter did not record, because the speech model is still downloading or did not download.
+        case waitingForModel
     }
 
     @Published private(set) var phase: Phase = .idle {
@@ -95,7 +97,7 @@ final class DictationController: ObservableObject {
         case .starting: cancel()
         case .recording: stop()
         case .transcribing, .polishing: break
-        case .idle, .finished, .failed: start()
+        case .idle, .finished, .failed, .waitingForModel: start()
         }
     }
 
@@ -106,7 +108,7 @@ final class DictationController: ObservableObject {
         pushToTalkHeld = true
         switch phase {
         case .starting, .recording, .transcribing, .polishing: return
-        case .idle, .finished, .failed: break
+        case .idle, .finished, .failed, .waitingForModel: break
         }
         guard Microphone.status != .notDetermined else {
             // The access dialog takes the keyboard focus, so ask for access and do not record yet.
@@ -125,6 +127,13 @@ final class DictationController: ObservableObject {
 
     func start() {
         guard !isRecording else { return }
+        // The first download of a speech model takes minutes. Patter cannot transcribe before it
+        // finishes, so it shows the progress instead of a recording that waits.
+        if engine.state.blocksDictation {
+            if case .failed = engine.state { engine.retry() }
+            show(.waitingForModel)
+            return
+        }
         switch Microphone.status {
         case .authorized:
             beginRecording()
@@ -196,7 +205,7 @@ final class DictationController: ObservableObject {
         guard let latest = store.latest else { return }
         switch phase {
         case .starting, .recording, .transcribing, .polishing: return
-        case .idle, .finished, .failed: break
+        case .idle, .finished, .failed, .waitingForModel: break
         }
         Task { show(.finished(await deliver(latest.text), cleanupFailed: false)) }
     }
@@ -318,6 +327,7 @@ final class DictationController: ObservableObject {
         case .finished(.needsAccess, _): seconds = 6
         case .finished(.noTextField, _): seconds = 3
         case .finished(_, let cleanupFailed): seconds = cleanupFailed ? 2.5 : 1.4
+        case .waitingForModel: seconds = 4
         default: seconds = 1.4
         }
         dismissTask = Task {

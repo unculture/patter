@@ -25,7 +25,7 @@ On the first launch, Patter does these things:
 2. It opens the transcripts window.
 3. It asks for microphone access.
 4. It asks for Accessibility access, so that it can paste the text.
-5. It downloads and prepares the English speech model.
+5. It downloads and prepares the English speech model. Dictation works when the download finishes. See [Speech models](#speech-models).
 
 ## Use Patter
 
@@ -110,7 +110,11 @@ Patter runs open-source NVIDIA Parakeet models on the Neural Engine through [Flu
 
 On an M4 MacBook Pro, 34 seconds of speech transcribes in about 0.25 seconds. Both models write punctuation, capital letters, and numbers ("$42,000", "7.30").
 
-To change the model, use Settings > General > Speech model. Patter downloads a model the first time you select it. If a dictation finishes before the model is ready, Patter waits for the model and then transcribes.
+To change the model, use Settings > General > Speech model. Patter downloads a model the first time you select it.
+
+The download of a model takes a few minutes, and dictation does not work until it finishes. During the download, the menu bar icon shows a down arrow. The transcripts window, the menu, and Settings show the progress. If you press the dictation shortcut, the indicator shows the progress, and Patter does not record.
+
+After the download, Patter prepares the model for the Neural Engine. If a dictation finishes while Patter prepares the model, Patter waits for the model and then transcribes.
 
 ## AI cleanup
 
@@ -180,7 +184,7 @@ After each rebuild, macOS asks one time whether Patter can use its keychain item
 
 If Patter says that a shortcut is not available, another app uses the same keys. Choose a different shortcut in Settings > General, or quit the other app and open Patter again.
 
-If the model download fails, click Retry in the transcripts window.
+If the model download fails, the menu bar icon shows a warning triangle. Click Retry in the transcripts window, or press the dictation shortcut. Patter then starts the download again.
 
 If a transcription fails, the indicator shows a Retry button for six seconds. Patter keeps the failed recording in memory until the next retry.
 
