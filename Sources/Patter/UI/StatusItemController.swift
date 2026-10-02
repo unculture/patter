@@ -79,8 +79,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             dictateTitle = "Start Dictation"
         }
         let dictate = item(dictateTitle, action: #selector(toggleDictation))
-        dictate.keyEquivalent = "r"
-        dictate.keyEquivalentModifierMask = [.control, .shift]
+        if let shortcut = preferences.dictationShortcut { dictate.setShortcut(shortcut) }
         dictate.isEnabled = !busy
         menu.addItem(dictate)
 
@@ -89,8 +88,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.addItem(copyLast)
         if preferences.autoPaste {
             let pasteLast = item("Paste Last Transcript", action: #selector(pasteLastTranscript))
-            pasteLast.keyEquivalent = "v"
-            pasteLast.keyEquivalentModifierMask = [.control, .command]
+            pasteLast.setShortcut(.pasteLast)
             pasteLast.isEnabled = store.latest != nil
             menu.addItem(pasteLast)
         }
@@ -206,5 +204,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
               let transcript = store.transcripts.first(where: { $0.id == id })
         else { return }
         Clipboard.copy(transcript.text)
+    }
+}
+
+private extension NSMenuItem {
+    /// Shows the shortcut next to the title.
+    @MainActor
+    func setShortcut(_ shortcut: Shortcut) {
+        keyEquivalent = shortcut.keyEquivalent
+        keyEquivalentModifierMask = shortcut.modifierFlags
     }
 }

@@ -1,5 +1,4 @@
 import AppKit
-import Carbon.HIToolbox
 import Combine
 
 @MainActor
@@ -14,11 +13,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         store: store, engine: engine, preferences: preferences,
         openSettings: { [weak self] in self?.settings.show() })
     private lazy var settings = SettingsWindowController(
-        preferences: preferences, engine: engine, store: store, apiKeys: apiKeys)
+        preferences: preferences, engine: engine, store: store, apiKeys: apiKeys, shortcuts: shortcuts)
+    private lazy var shortcuts = ShortcutController(preferences: preferences)
     private var indicator: IndicatorController?
     private var statusItem: StatusItemController?
-    private var hotKey: HotKey?
-    private var pasteHotKey: HotKey?
     private var subscriptions = Set<AnyCancellable>()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -38,21 +36,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             openSettings: { [weak self] in self?.settings.show() })
         Task { await ReasoningCatalog.shared.preload() }
 
-        hotKey = HotKey(keyCode: Shortcut.keyCode, modifiers: controlKey | shiftKey) { [weak self] in
-            MainActor.assumeIsolated { self?.dictation.toggle() }
-        }
-        if hotKey == nil { warnShortcutUnavailable() }
+        shortcuts.start(dictation: dictation)
+        if !shortcuts.unavailable.isEmpty { warnShortcutsUnavailable() }
 
         NSLog("Patter: Accessibility access is \(Accessibility.isTrusted ? "on" : "off")")
-        updatePasteShortcut(enabled: preferences.autoPaste)
         if preferences.autoPaste && !preferences.askedForAccessibility { askForAccessibility() }
         preferences.$autoPaste
             .dropFirst()
             .removeDuplicates()
-            .sink { [weak self] enabled in
-                self?.updatePasteShortcut(enabled: enabled)
-                if enabled { self?.askForAccessibility() }
-            }
+            .filter { $0 }
+            .sink { [weak self] _ in self?.askForAccessibility() }
             .store(in: &subscriptions)
 
         if !preferences.hasLaunchedBefore {
@@ -75,28 +68,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settings.show()
     }
 
-    /// ⌃⌘V pastes the last transcript. Patter holds this shortcut only while auto-paste is on.
-    private func updatePasteShortcut(enabled: Bool) {
-        pasteHotKey = nil
-        guard enabled else { return }
-        pasteHotKey = HotKey(keyCode: Shortcut.pasteLastKeyCode, modifiers: controlKey | cmdKey) { [weak self] in
-            MainActor.assumeIsolated { self?.dictation.pasteLastTranscript() }
-        }
-        if pasteHotKey == nil { NSLog("Patter: another app uses \(Shortcut.pasteLastDisplay)") }
-    }
-
     private func askForAccessibility() {
         guard !Accessibility.isTrusted else { return }
         preferences.askedForAccessibility = true
         Accessibility.requestAccess()
     }
 
-    private func warnShortcutUnavailable() {
+    private func warnShortcutsUnavailable() {
+        let taken = ShortcutAction.allCases
+            .filter(shortcuts.unavailable.contains)
+            .compactMap(shortcuts.shortcut(for:))
+            .map(\.display)
+        guard !taken.isEmpty else { return }
         let alert = NSAlert()
-        alert.messageText = "The shortcut \(Shortcut.display) is not available"
-        alert.informativeText = "Another app uses Control-Shift-R. Quit that app and open Patter again, or start dictation from the Patter menu bar icon."
+        alert.messageText = taken.count == 1
+            ? "The shortcut \(taken[0]) is not available"
+            : "The shortcuts \(taken.joined(separator: " and ")) are not available"
+        alert.informativeText = (taken.count == 1 ? "Another app uses it." : "Other apps use them.")
+            + " Choose a different shortcut in Settings, or quit the other app and open Patter again. You can also start dictation from the Patter menu bar icon."
         alert.alertStyle = .warning
-        alert.runModal()
+        alert.addButton(withTitle: "Open Settings")
+        alert.addButton(withTitle: "OK")
+        if alert.runModal() == .alertFirstButtonReturn { settings.show() }
     }
 }
 

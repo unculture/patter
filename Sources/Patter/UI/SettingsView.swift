@@ -11,17 +11,19 @@ struct SettingsView: View {
     @ObservedObject var engine: SpeechEngine
     @ObservedObject var store: TranscriptStore
     @ObservedObject var apiKeys: APIKeyStore
+    @ObservedObject var shortcuts: ShortcutController
 
     @State private var tab: Tab
 
     init(
         preferences: Preferences, engine: SpeechEngine, store: TranscriptStore, apiKeys: APIKeyStore,
-        initialTab: Tab = .general
+        shortcuts: ShortcutController, initialTab: Tab = .general
     ) {
         self.preferences = preferences
         self.engine = engine
         self.store = store
         self.apiKeys = apiKeys
+        self.shortcuts = shortcuts
         _tab = State(initialValue: initialTab)
     }
 
@@ -38,7 +40,7 @@ struct SettingsView: View {
 
             switch tab {
             case .general:
-                GeneralSettings(preferences: preferences, store: store)
+                GeneralSettings(preferences: preferences, store: store, shortcuts: shortcuts)
             case .cleanup:
                 CleanupSettings(preferences: preferences, apiKeys: apiKeys)
             }
@@ -52,6 +54,7 @@ struct SettingsView: View {
 private struct GeneralSettings: View {
     @ObservedObject var preferences: Preferences
     @ObservedObject var store: TranscriptStore
+    @ObservedObject var shortcuts: ShortcutController
 
     @State private var devices: [AudioInputDevice] = []
     @State private var defaultDevice: AudioInputDevice?
@@ -60,6 +63,17 @@ private struct GeneralSettings: View {
 
     var body: some View {
         Form {
+            Section {
+                ForEach(ShortcutAction.allCases) { action in
+                    ShortcutRow(action: action, shortcut: shortcuts.shortcut(for: action), shortcuts: shortcuts)
+                }
+            } header: {
+                Text("Shortcuts")
+            } footer: {
+                Text("Press the dictation shortcut in any app to start, and press it again to stop. To change a shortcut, click it and press the new keys. To cancel, press Escape.")
+                    .settingsFootnote()
+            }
+
             Section {
                 Toggle("Open Patter at login", isOn: Binding(
                     get: { preferences.launchAtLogin },
@@ -86,7 +100,7 @@ private struct GeneralSettings: View {
                     }
                 }
             } footer: {
-                Text("Patter pastes the transcript, then puts your clipboard back after half a second. If the cursor is not in a text field, Patter copies the transcript to the clipboard. To paste the last transcript again, press \(Shortcut.pasteLastDisplay).")
+                Text("Patter pastes the transcript, then puts your clipboard back after half a second. If the cursor is not in a text field, Patter copies the transcript to the clipboard. To paste the last transcript again, press \(Shortcut.pasteLast.display).")
                     .settingsFootnote()
             }
 
@@ -137,6 +151,14 @@ private struct GeneralSettings: View {
             reloadDevices()
             accessibilityTrusted = Accessibility.isTrusted
         }
+        // A recording ends when the user leaves the tab, the window, or Patter.
+        .onDisappear { shortcuts.stopRecording() }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { _ in
+            shortcuts.stopRecording()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
+            shortcuts.stopRecording()
+        }
         // The user turns on the access in System Settings, then comes back to Patter.
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             accessibilityTrusted = Accessibility.isTrusted
@@ -154,6 +176,40 @@ private struct GeneralSettings: View {
     private func reloadDevices() {
         devices = AudioDevices.inputDevices()
         defaultDevice = AudioDevices.defaultInputDevice()
+    }
+}
+
+/// A shortcut, with the reason when Patter cannot use it.
+private struct ShortcutRow: View {
+    let action: ShortcutAction
+    let shortcut: Shortcut?
+    @ObservedObject var shortcuts: ShortcutController
+
+    private var isRecording: Bool { shortcuts.recording == action }
+
+    var body: some View {
+        LabeledContent(action.title) {
+            ShortcutField(
+                shortcut: shortcut,
+                isRecording: isRecording,
+                heldModifiers: shortcuts.heldModifiers,
+                onClick: { isRecording ? shortcuts.stopRecording() : shortcuts.startRecording(action) },
+                onRemove: { shortcuts.setShortcut(nil, for: action) })
+        }
+        if isRecording, let rejection = shortcuts.rejection {
+            warning(rejection)
+        } else if !isRecording, let shortcut, shortcuts.unavailable.contains(action) {
+            warning("Another app uses \(shortcut.display). Choose a different shortcut.")
+        }
+    }
+
+    private func warning(_ message: String) -> some View {
+        Label {
+            Text(message)
+        } icon: {
+            Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
+        }
+        .font(.callout)
     }
 }
 

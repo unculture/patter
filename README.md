@@ -36,6 +36,8 @@ On the first launch, Patter does these things:
 
 To discard a recording, click the X button on the indicator. Recordings shorter than 0.3 seconds are discarded automatically.
 
+Control-Shift-R is the default shortcut. To use different keys, see [Shortcuts](#shortcuts).
+
 The menu bar icon opens a menu with these items:
 
 - Start Dictation or Stop Dictation.
@@ -48,6 +50,20 @@ The menu bar icon opens a menu with these items:
 - Settings.
 
 The transcripts window lists every transcript, newest first, grouped by day. Each entry shows the time, the length of the recording, and the word count. Hover over an entry to copy or delete it. After a delete, you can click Undo for five seconds. The search field filters the list. The gear button opens the settings.
+
+## Shortcuts
+
+To change the dictation shortcut, do these steps:
+
+1. Open Settings > General.
+2. Under Shortcuts, click the field next to "Start and stop dictation".
+3. Press the new keys, for example Control-Option-D. To cancel, press Escape.
+
+To remove the shortcut, click the X button in the field. You can then start dictation from the menu bar icon.
+
+A shortcut must include Control or Command, because Patter must not take a key that you type. A function key, for example F5, also works alone. Patter does not accept Control-Command-V, because that shortcut pastes the last transcript.
+
+If another app uses the shortcut, Settings shows a warning. Choose a different shortcut.
 
 ## Auto-paste
 
@@ -156,7 +172,7 @@ If the indicator says "Pasted" but no text shows up, the app did not take the pa
 
 After each rebuild, macOS asks one time whether Patter can use its keychain item. The reason is that the keychain ties an item to the exact build of an app that has no Apple team ID. Click Always Allow. If you click Allow, macOS asks again at each launch.
 
-If Patter says that the shortcut is not available, another app uses Control-Shift-R. Quit that app and open Patter again.
+If Patter says that a shortcut is not available, another app uses the same keys. Choose a different shortcut in Settings > General, or quit the other app and open Patter again.
 
 If the model download fails, click Retry in the transcripts window.
 
@@ -226,7 +242,7 @@ Both model licenses allow commercial use, with attribution.
 - `Sources/Patter/Audio/`: microphone selection, capture, conversion to 16 kHz mono, and the level meter.
 - `Sources/Patter/Speech/SpeechEngine.swift`: model download, loading, warm-up, and transcription.
 - `Sources/Patter/Cleanup/`: the OpenRouter client, the cleanup prompt and output checks, and the keychain storage.
-- `Sources/Patter/System/HotKey.swift`: the global shortcuts. They use Carbon hot keys, so they need no Accessibility permission.
+- `Sources/Patter/System/HotKey.swift`, `Shortcut.swift`, and `ShortcutController.swift`: the global shortcuts, the names of their keys, and the recording of a new shortcut in the settings. The shortcuts use Carbon hot keys, so they need no Accessibility permission.
 - `Sources/Patter/System/Paster.swift`: the text field check, the paste, and the clipboard restore.
 - `Sources/Patter/UI/`: the indicator, the transcripts window, the settings, and the menu bar item.
 - `Sources/Patter/Model/`: transcripts, storage, and preferences.
