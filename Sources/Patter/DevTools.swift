@@ -117,6 +117,9 @@ enum DevTools {
             ("pill-finished", .finished(.copied, cleanupFailed: false), .ready),
             ("pill-failed", .failed(message: "Transcription failed", action: .retry), .ready),
             ("pill-microphone", .failed(message: "Microphone access is off", action: .openMicrophoneSettings), .ready),
+            ("pill-model-downloading", .waitingForModel, .downloading(0.42)),
+            ("pill-model-failed", .waitingForModel, .failed("The Internet connection appears to be offline.")),
+            ("pill-model-finished", .waitingForModel, .preparing),
         ]
 
         for (name, phase, state) in pills {
@@ -143,6 +146,13 @@ enum DevTools {
                     .frame(width: 760, height: 640)
                 write(windowImage(of: view, appearance: appearance), to: folder.appendingPathComponent("history-\(name)\(suffix).png"))
             }
+        }
+        let downloading = SpeechEngine(snapshotState: .downloading(0.42))
+        let failed = SpeechEngine(snapshotState: .failed("The Internet connection appears to be offline."))
+        for (name, source, model) in [("history-downloading", emptyStore, downloading), ("history-download-failed", store, failed)] {
+            let view = HistoryView(store: source, engine: model, preferences: .shared)
+                .frame(width: 760, height: 640)
+            write(windowImage(of: view, appearance: .aqua), to: folder.appendingPathComponent("\(name).png"))
         }
         for tab in SettingsView.Tab.allCases {
             let view = SettingsView(

@@ -17,7 +17,8 @@ struct IndicatorView: View {
                     onSkip: dictation.skipCleanup,
                     onRetry: dictation.retryFailedRecording,
                     onOpenSettings: dictation.openMicrophoneSettings,
-                    onAllowPasting: dictation.openAccessibilitySettings
+                    onAllowPasting: dictation.openAccessibilitySettings,
+                    onRetryModel: engine.retry
                 )
                 .transition(
                     .asymmetric(
@@ -41,6 +42,7 @@ struct PillView: View {
     var onRetry: () -> Void = {}
     var onOpenSettings: () -> Void = {}
     var onAllowPasting: () -> Void = {}
+    var onRetryModel: () -> Void = {}
 
     var body: some View {
         content
@@ -154,6 +156,55 @@ struct PillView: View {
             }
             .padding(.leading, 10)
             .padding(.trailing, action == .none ? 10 : 0)
+
+        case .waitingForModel:
+            modelStatus
+        }
+    }
+
+    /// Why Patter did not record. The text changes while the pill shows, for example when the download finishes.
+    @ViewBuilder
+    private var modelStatus: some View {
+        switch engineState {
+        case .downloading(let fraction):
+            HStack(spacing: 10) {
+                Image(systemName: "arrow.down.circle.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Theme.cyan)
+                TwoLineLabel(title: "Downloading the speech model", detail: "Dictation works when it finishes")
+                PillProgressBar(fraction: fraction)
+                    .frame(width: 56, height: 4)
+                Text("\(Int(fraction * 100))%")
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .monospacedDigit()
+                    .foregroundStyle(.white.opacity(0.6))
+                    .frame(minWidth: 30, alignment: .trailing)
+            }
+            .padding(.horizontal, 10)
+        case .failed:
+            HStack(spacing: 10) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Theme.warning)
+                TwoLineLabel(title: "The speech model did not download", detail: "Dictation works after the download")
+                PillTextButton(title: "Retry", action: onRetryModel)
+            }
+            .padding(.leading, 10)
+        case .idle:
+            HStack(spacing: 10) {
+                WaveformView(mode: .processing, barCount: 9)
+                    .frame(width: 52, height: 20)
+                TwoLineLabel(title: "Loading the speech model", detail: "Dictation works in a moment")
+            }
+            .padding(.horizontal, 10)
+        case .preparing, .ready:
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(Theme.success)
+                TwoLineLabel(title: "The download finished", detail: "You can dictate now")
+            }
+            .padding(.horizontal, 10)
         }
     }
 
@@ -171,6 +222,39 @@ struct PillView: View {
         case .preparing, .idle: "Preparing model"
         case .ready, .failed: "Transcribing"
         }
+    }
+}
+
+private struct TwoLineLabel: View {
+    let title: String
+    let detail: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(title)
+                .font(.system(size: 12.5, weight: .medium))
+                .foregroundStyle(.white.opacity(0.9))
+            Text(detail)
+                .font(.system(size: 11))
+                .foregroundStyle(.white.opacity(0.55))
+        }
+        .fixedSize()
+    }
+}
+
+private struct PillProgressBar: View {
+    let fraction: Double
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack(alignment: .leading) {
+                Capsule().fill(.white.opacity(0.15))
+                Capsule()
+                    .fill(Theme.accent)
+                    .frame(width: geometry.size.width * min(max(fraction, 0), 1))
+            }
+        }
+        .animation(.easeOut(duration: 0.3), value: fraction)
     }
 }
 
